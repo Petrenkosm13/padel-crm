@@ -68,7 +68,7 @@ const WEEK_DAYS=[{id:1,short:"Пн",long:"Понеділок"},{id:2,short:"Вт
 const TRAIN_TYPES=[{id:"padel_ind",label:"Падл індивідуальний",color:"#9b8ef4",bg:"rgba(155,142,244,.18)"},{id:"padel_grp",label:"Падл груповий",color:"#f4a23a",bg:"rgba(244,162,58,.18)"},{id:"squash_ind",label:"Сквош індивідуальний",color:"#4a9ef4",bg:"rgba(74,158,244,.18)"},{id:"my_train",label:"Моє тренування",color:"#f46a6a",bg:"rgba(244,106,106,.18)"},{id:"padel_aly",label:"Падл груповий (Alyona)",color:"#f4c53a",bg:"rgba(244,197,58,.18)"}];
 const COURTS=[{id:"padel",label:"Падл",color:"#4af0b0"},{id:"squash",label:"Сквош",color:"#4a9ef4"}];
 const HOURS=Array.from({length:17},(_,i)=>i+7);
-const TODAY=new Date().toISOString().slice(0,10);
+const TODAY=(()=>{const n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;})();
 const DAY_NAMES_SHORT=["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
 const MONTH_NAMES=["Січ","Лют","Бер","Квіт","Трав","Черв","Лип","Серп","Вер","Жовт","Лист","Груд"];
 
@@ -82,7 +82,8 @@ function getCourt(id){return COURTS.find(c=>c.id===id);}
 function getNoteType(id){return NOTE_TYPES.find(t=>t.id===id)||NOTE_TYPES[0];}
 function getMembers(g){return(g.members||[]).map(m=>typeof m==="string"?{name:m,paid:{}}:m);}
 function formatDate(d){if(!d)return"";const dt=new Date(d+"T00:00:00");return dt.toLocaleDateString("uk-UA",{day:"numeric",month:"short"});}
-function getWeekDates(offset=0){const now=new Date();const day=now.getDay();const mon=new Date(now);mon.setDate(now.getDate()-((day+6)%7)+offset*7);return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d.toISOString().slice(0,10);});}
+function toLocalISO(d){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,"0");const day=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${day}`;}
+function getWeekDates(offset=0){const now=new Date();const day=now.getDay();const mon=new Date(now);mon.setDate(now.getDate()-((day+6)%7)+offset*7);return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return toLocalISO(d);});}
 function getCalendarNames(trainings){
   const names=new Set();
   (trainings||[]).forEach(t=>{

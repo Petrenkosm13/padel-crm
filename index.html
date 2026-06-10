@@ -678,6 +678,7 @@ function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast,settings})
 
   const templateTabs=settings?.contactTabTemplates||[
     {id:"main",label:"Основна",type:"main",removable:false},
+    {id:"params",label:"Параметри",type:"params",removable:true},
     {id:"history",label:"Історія",type:"history",removable:false},
   ];
   const contactTabs=c.customTabs||[];
@@ -743,22 +744,6 @@ function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast,settings})
           )}
         </div>
 
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
-          <StatusPill status={c.status}/>
-          {c.channels?.map(ch=><ChannelChip key={ch} channel={ch}/>)}
-        </div>
-        {c.level&&<div style={{color:"var(--text2)",fontSize:13,marginBottom:4}}>{c.level}</div>}
-        {c.contact&&<div style={{color:"var(--accent2)",fontSize:13,marginBottom:4}}>&#128241; {c.contact}</div>}
-        {c.chatLink&&(()=>{
-          const pl=CHAT_PLATFORMS.find(p=>c.chatLink.startsWith(p.base));
-          return(<a href={c.chatLink} target="_blank" rel="noreferrer"
-            style={{display:"inline-flex",alignItems:"center",gap:6,color:"#4a9ef4",fontSize:13,
-              marginBottom:8,textDecoration:"none",padding:"4px 10px",
-              background:"rgba(74,158,244,.1)",borderRadius:8,border:"1px solid rgba(74,158,244,.25)"}}>
-            {pl?pl.label+" →":"Перейти в чат"}
-          </a>);
-        })()}
-
         {/* Add tab form */}
         {addingTab&&(
           <div style={{...card,marginBottom:12}}>
@@ -783,7 +768,22 @@ function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast,settings})
         {/* Main tab */}
         {currentTab?.type==="main"&&(
           <div>
-            {c.note&&<div style={{marginBottom:14}}>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+              <StatusPill status={c.status}/>
+              {c.channels?.map(ch=><ChannelChip key={ch} channel={ch}/>)}
+            </div>
+            {c.level&&<div style={{color:"var(--text2)",fontSize:13,marginBottom:6}}>{c.level}</div>}
+            {c.contact&&<div style={{color:"var(--accent2)",fontSize:13,marginBottom:6}}>&#128241; {c.contact}</div>}
+            {c.chatLink&&(()=>{
+              const pl=CHAT_PLATFORMS.find(p=>c.chatLink.startsWith(p.base));
+              return(<a href={c.chatLink} target="_blank" rel="noreferrer"
+                style={{display:"inline-flex",alignItems:"center",gap:6,color:"#4a9ef4",fontSize:13,
+                  marginBottom:10,textDecoration:"none",padding:"4px 10px",
+                  background:"rgba(74,158,244,.1)",borderRadius:8,border:"1px solid rgba(74,158,244,.25)"}}>
+                {pl?pl.label+" →":"Перейти в чат"}
+              </a>);
+            })()}
+            {c.note&&<div style={{marginBottom:10}}>
               <div style={{fontSize:11,fontWeight:600,color:"var(--muted)",textTransform:"uppercase",letterSpacing:.6,marginBottom:6}}>Нотатка</div>
               <div style={{background:"var(--surface2)",borderRadius:8,padding:10,color:"var(--text2)",fontSize:13,lineHeight:1.55}}>{c.note}</div>
             </div>}
@@ -816,8 +816,40 @@ function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast,settings})
           </div>
         )}
 
+        {/* Params tab */}
+        {currentTab?.type==="params"&&(()=>{
+          const tabData=contactTabs.find(t=>t.id===currentTab.id)||{id:"params",data:[]};
+          const entries=tabData.data||[];
+          const saveParamData=(data)=>{
+            const existing=contactTabs.find(t=>t.id==="params");
+            if(existing){
+              onUpdate(contacts.map(x=>x.id===id?{...x,customTabs:(x.customTabs||[]).map(t=>t.id==="params"?{...t,data}:t)}:x));
+            } else {
+              onUpdate(contacts.map(x=>x.id===id?{...x,customTabs:[...(x.customTabs||[]),{id:"params",label:"Параметри",type:"params",removable:true,data}]}:x));
+            }
+          };
+          return(
+            <div>
+              {entries.map(e=>(
+                <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
+                  <span style={{fontSize:12,color:"var(--muted)",width:130,flexShrink:0}}>{e.key}</span>
+                  <span style={{fontSize:13,flex:1,fontWeight:500}}>{e.value}</span>
+                  <DeleteBtn onDelete={()=>saveParamData(entries.filter(x=>x.id!==e.id))} label=""/>
+                </div>
+              ))}
+              {entries.length===0&&<div style={{color:"var(--muted)",fontSize:13,marginBottom:10}}>Параметри не додані</div>}
+              <div style={{display:"flex",gap:6,marginTop:10}}>
+                <input style={{...inp,width:110}} placeholder="Назва (Вага...)" value={newEntryKey} onChange={e=>setNewEntryKey(e.target.value)}/>
+                <input style={{...inp,flex:1}} placeholder="Значення" value={newEntry} onChange={e=>setNewEntry(e.target.value)}
+                  onKeyDown={ev=>{if(ev.key==="Enter"&&newEntryKey.trim()&&newEntry.trim()){saveParamData([...entries,{id:uid(),key:newEntryKey.trim(),value:newEntry.trim()}]);setNewEntry("");setNewEntryKey("");}}}/>
+                <button style={btnP} onClick={()=>{if(newEntryKey.trim()&&newEntry.trim()){saveParamData([...entries,{id:uid(),key:newEntryKey.trim(),value:newEntry.trim()}]);setNewEntry("");setNewEntryKey("");}}}>+</button>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Custom tabs */}
-        {currentTab?.removable&&(()=>{
+        {currentTab?.removable&&currentTab?.type!=="params"&&(()=>{
           const tabData=contactTabs.find(t=>t.id===currentTab.id);
           if(!tabData)return null;
           const entries=tabData.data||[];

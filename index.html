@@ -717,24 +717,8 @@ function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast,settings})
           </div>
         </div>
 
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
-          <StatusPill status={c.status}/>
-          {c.channels?.map(ch=><ChannelChip key={ch} channel={ch}/>)}
-        </div>
-        {c.level&&<div style={{color:"var(--text2)",fontSize:13,marginBottom:4}}>{c.level}</div>}
-        {c.contact&&<div style={{color:"var(--accent2)",fontSize:13,marginBottom:4}}>&#128241; {c.contact}</div>}
-        {c.chatLink&&(()=>{
-          const pl=CHAT_PLATFORMS.find(p=>c.chatLink.startsWith(p.base));
-          return(<a href={c.chatLink} target="_blank" rel="noreferrer"
-            style={{display:"inline-flex",alignItems:"center",gap:6,color:"#4a9ef4",fontSize:13,
-              marginBottom:8,textDecoration:"none",padding:"4px 10px",
-              background:"rgba(74,158,244,.1)",borderRadius:8,border:"1px solid rgba(74,158,244,.25)"}}>
-            {pl?pl.label+" →":"Перейти в чат"}
-          </a>);
-        })()}
-
         {/* Tab navigation */}
-        <div style={{display:"flex",gap:4,overflowX:"auto",marginBottom:12,marginTop:8,
+        <div style={{display:"flex",gap:4,overflowX:"auto",marginBottom:12,marginTop:4,
           borderBottom:"1px solid var(--border)",paddingBottom:8}}>
           {allTabs.map(tab=>(
             <button key={tab.id} onClick={()=>setActiveTab(tab.id)}
@@ -758,6 +742,22 @@ function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast,settings})
             </button>
           )}
         </div>
+
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
+          <StatusPill status={c.status}/>
+          {c.channels?.map(ch=><ChannelChip key={ch} channel={ch}/>)}
+        </div>
+        {c.level&&<div style={{color:"var(--text2)",fontSize:13,marginBottom:4}}>{c.level}</div>}
+        {c.contact&&<div style={{color:"var(--accent2)",fontSize:13,marginBottom:4}}>&#128241; {c.contact}</div>}
+        {c.chatLink&&(()=>{
+          const pl=CHAT_PLATFORMS.find(p=>c.chatLink.startsWith(p.base));
+          return(<a href={c.chatLink} target="_blank" rel="noreferrer"
+            style={{display:"inline-flex",alignItems:"center",gap:6,color:"#4a9ef4",fontSize:13,
+              marginBottom:8,textDecoration:"none",padding:"4px 10px",
+              background:"rgba(74,158,244,.1)",borderRadius:8,border:"1px solid rgba(74,158,244,.25)"}}>
+            {pl?pl.label+" →":"Перейти в чат"}
+          </a>);
+        })()}
 
         {/* Add tab form */}
         {addingTab&&(
@@ -867,7 +867,7 @@ function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast,settings})
                     style={{width:20,height:20,borderRadius:4,border:`2px solid ${e.done?"var(--accent2)":"var(--border2)"}`,
                       background:e.done?"rgba(74,240,176,.15)":"var(--surface2)",cursor:"pointer",
                       display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:11,color:"var(--accent2)"}}>
-                    {e.done&&"&#10003;"}
+                    {e.done&&"✓"}
                   </button>
                   <span style={{flex:1,fontSize:13,textDecoration:e.done?"line-through":"none",color:e.done?"var(--muted)":"var(--text)"}}>{e.text}</span>
                   <DeleteBtn onDelete={()=>delTabEntry(currentTab.id,e.id)} label=""/>

@@ -184,7 +184,7 @@ function App(){
   const saveTimer=useRef(null);
   const [tab,setTab]=useState("calendar");
   const [dark,setDark]=useState(()=>lsGet("padel_theme")!=="light");
-  const [settings,setSettings]=useState(()=>lsGet("padel_settings")||{
+  const [settings,setSettings]=useState(()=>{const saved=lsGet("padel_settings");if(saved&&saved.trainTypes&&saved.trainTypes.length>0)return saved;return {
     trainTypes:[
       {id:"individual",label:"Індивідуальне тренування",color:"#9b8ef4"},
       {id:"group_train",label:"Групове тренування",color:"#f4a23a"},
@@ -208,7 +208,7 @@ function App(){
       {id:"telegram",label:"Telegram",color:"#229ED9"},
       {id:"personal",label:"Особисто",color:"#c8f135"},
     ],
-  });
+  }});
   const [showSettings,setShowSettings]=useState(false);
   const [showSignOut,setShowSignOut]=useState(false);
   const updSettings=(v)=>{setSettings(v);lsSet("padel_settings",v);};
@@ -234,10 +234,11 @@ function App(){
       if(data.courts){setCourts(data.courts);lsSet("padel_courts",data.courts);}
       if(data.trainings){setTrainings(data.trainings);lsSet("padel_trainings",data.trainings);}
       if(data.notes){setNotes(data.notes);lsSet("padel_notes",data.notes);}
+      if(data.settings&&data.settings.trainTypes&&data.settings.trainTypes.length>0){setSettings(data.settings);lsSet("padel_settings",data.settings);}
     });
     return unsub;
   },[user]);
-  const cloudSave=useCallback((c,g,_p,co,tr,n)=>{if(!user)return;clearTimeout(saveTimer.current);saveTimer.current=setTimeout(async()=>{try{await window._fb.save(user.uid,{contacts:c,groups:g,courts:co,trainings:tr,notes:n});}catch(e){console.error(e);}},800);},[user]);
+  const cloudSave=useCallback((c,g,_p,co,tr,n)=>{if(!user)return;clearTimeout(saveTimer.current);saveTimer.current=setTimeout(async()=>{try{await window._fb.save(user.uid,{contacts:c,groups:g,courts:co,trainings:tr,notes:n,settings:lsGet("padel_settings")||{}});}catch(e){console.error(e);}},800);},[user]);
 
   const updC=(v)=>{setContacts(v);lsSet("padel_contacts",v);cloudSave(v,groups,[],courts,trainings,notes);};
   const updG=(v)=>{setGroups(v);lsSet("padel_groups",v);cloudSave(contacts,v,[],courts,trainings,notes);};
@@ -263,7 +264,7 @@ function App(){
   if(!user)return(
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",gap:20,padding:24,background:"var(--bg)"}}>
       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:40,fontWeight:700,letterSpacing:4,color:"var(--accent)"}}>COACH<span style={{color:"var(--accent2)"}}>CRM</span></div>
-      <div style={{color:"var(--text2)",fontSize:14,textAlign:"center",maxWidth:280}}>Твоя особиста CRM для паделу.</div>
+      <div style={{color:"var(--text2)",fontSize:14,textAlign:"center",maxWidth:280}}>Твій інструмент для тренерів.</div>
       <button onClick={()=>window._fb.signIn().catch(e=>alert("Помилка: "+e.message))}
         style={{display:"flex",alignItems:"center",gap:10,padding:"12px 24px",borderRadius:12,border:"1px solid var(--border2)",background:"var(--surface2)",color:"var(--text)",fontFamily:"'DM Sans',sans-serif",fontSize:14,fontWeight:600,cursor:"pointer"}}>
         <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
@@ -859,7 +860,7 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
                 <div style={{borderLeft:"1px solid var(--border)",borderRight:"1px solid var(--border)",position:"relative",height:totalH,background:"rgba(255,255,255,.005)"}}>
                   {HOURS.map((h,i)=>(<div key={h} style={{position:"absolute",top:i*CELL_H,left:0,right:0,height:CELL_H,borderBottom:"1px solid var(--cal-line)",pointerEvents:"none"}}/>))}
                   {HOURS.map((h,i)=>courtCovers(date,h)?null:(<button key={h} onClick={()=>setCourtModal({date,hour:h,isNew:true})} style={{position:"absolute",top:i*CELL_H,left:0,width:"100%",height:CELL_H,background:"transparent",border:"none",color:"var(--border2)",fontSize:16,cursor:"pointer",opacity:.5,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>))}
-                  {courts.filter(c=>c.date===date).map(c=>{const ct=(settings?.courtTypes||COURTS).find(x=>x.id===c.court);const dur=c.duration||1;const color=ct?ct.color:"var(--accent2)";return(<div key={c.id} onClick={()=>setCourtModal({...c,isNew:false})} style={{position:"absolute",top:topPx(c.hour)+2,left:2,right:2,height:dur*CELL_H-4,background:`${color||"#4af0b0"}28`,border:`1px solid ${color||"#4af0b0"}80`,borderLeft:`3px solid ${color||"#4af0b0"}`,borderRadius:5,padding:"3px 5px",cursor:"pointer",overflow:"hidden",zIndex:2,boxSizing:"border-box"}}><div style={{fontSize:10,fontWeight:700,color:color||"#4af0b0",lineHeight:1.2}}>{ct?ct.label:"Корт"}</div>{c.courtNum&&<div style={{fontSize:9,opacity:.8,color:color||"#4af0b0"}}>№{c.courtNum}</div>}{dur>1&&<div style={{fontSize:9,color:"var(--muted)",marginTop:1}}>{dur} год</div>}</div>);})}
+                  {courts.filter(c=>c.date===date).map(c=>{const ct=(settings?.courtTypes||COURTS).find(x=>x.id===c.court);const dur=c.duration||1;const color=ct?ct.color:"var(--accent2)";return(<div key={c.id} onClick={()=>setCourtModal({...c,isNew:false})} style={{position:"absolute",top:topPx(c.hour)+2,left:2,right:2,height:dur*CELL_H-4,background:color?color+"33":"rgba(74,240,176,.2)",border:`1px solid ${color||"#4af0b0"}`,borderLeft:`3px solid ${color||"#4af0b0"}`,borderRadius:5,padding:"3px 5px",cursor:"pointer",overflow:"hidden",zIndex:2,boxSizing:"border-box"}}><div style={{fontSize:10,fontWeight:700,color:color||"#4af0b0",lineHeight:1.2}}>{ct?ct.label:"Корт"}</div>{c.courtNum&&<div style={{fontSize:9,opacity:.8,color:color||"#4af0b0"}}>№{c.courtNum}</div>}{dur>1&&<div style={{fontSize:9,color:"var(--muted)",marginTop:1}}>{dur} год</div>}</div>);})}
                 </div>
                 <div style={{position:"relative",height:totalH}}>
                   {HOURS.map((h,i)=>(<div key={h} style={{position:"absolute",top:i*CELL_H,left:0,right:0,height:CELL_H,borderBottom:"1px solid var(--cal-line)",pointerEvents:"none"}}/>))}

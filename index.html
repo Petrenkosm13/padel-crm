@@ -286,7 +286,7 @@ function App(){
       <header style={{background:"var(--surface)",borderBottom:"1px solid var(--border)",padding:"0 12px",height:52,display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:22,fontWeight:700,letterSpacing:3,color:"var(--accent)"}}>PADEL<span style={{color:"var(--accent2)"}}>CRM</span></div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <button onClick={()=>setDark(d=>!d)} style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:8,padding:"5px 9px",cursor:"pointer",fontSize:16,lineHeight:1,color:"var(--text)",display:"flex",alignItems:"center"}}>{dark?"[ Світла ]":"[ Темна ]"}</button>
+          <button onClick={()=>setDark(d=>!d)} style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:8,padding:"5px 9px",cursor:"pointer",fontSize:18,lineHeight:1,fontFamily:"Apple Color Emoji,Segoe UI Emoji,sans-serif",display:"flex",alignItems:"center"}} title={dark?"Світла тема":"Темна тема"}>{dark?"☀️":"🌙"}</button>
           <button onClick={()=>setShowSettings(true)}
             style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:8,
               padding:"5px 9px",cursor:"pointer",fontSize:15,lineHeight:1,color:"var(--muted)",
@@ -657,18 +657,16 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
           <div style={{display:"grid",gridTemplateColumns:gridCols,position:"sticky",top:0,zIndex:40,background:"var(--bg)",borderBottom:"2px solid var(--border)"}}>
             <div style={{borderRight:"1px solid var(--border)"}}/>
             {dates.map((d,i)=>{const today=d===TODAY;const dt=new Date(d+"T00:00:00");return(
-              <React.Fragment key={d}>
-                <div style={{gridColumn:"span 2",borderLeft:"1px solid var(--border)",display:"flex",flexDirection:"column"}}>
-                  <div style={{textAlign:"center",padding:"5px 4px 2px",borderBottom:"1px solid var(--border2)",background:today?"rgba(200,241,53,.07)":"transparent"}}>
-                    <span style={{fontSize:10,color:"var(--muted)"}}>{DAY_NAMES_SHORT[i]} </span>
-                    <span style={{fontSize:13,fontWeight:700,color:today?"var(--accent)":"var(--text)"}}>{dt.getDate()} {MONTH_NAMES[dt.getMonth()]}</span>
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:`${COURT_W}px ${TRAIN_W}px`}}>
-                    <div style={{fontSize:9,color:"var(--muted)",textAlign:"center",padding:"2px 0",borderRight:"1px solid var(--border)"}}>КОРТ</div>
-                    <div style={{fontSize:9,color:"var(--muted)",textAlign:"center",padding:"2px 0"}}>ТРЕНУВАННЯ</div>
-                  </div>
+              <div key={d} style={{gridColumn:"span 2",borderLeft:"1px solid var(--border)",display:"flex",flexDirection:"column"}}>
+                <div style={{textAlign:"center",padding:"5px 4px 2px",borderBottom:"1px solid var(--border2)",background:today?"rgba(200,241,53,.07)":"transparent"}}>
+                  <span style={{fontSize:10,color:"var(--muted)"}}>{DAY_NAMES_SHORT[i]} </span>
+                  <span style={{fontSize:13,fontWeight:700,color:today?"var(--accent)":"var(--text)"}}>{dt.getDate()} {MONTH_NAMES[dt.getMonth()]}</span>
                 </div>
-              </React.Fragment>
+                <div style={{display:"grid",gridTemplateColumns:`${COURT_W}px ${TRAIN_W}px`}}>
+                  <div style={{fontSize:9,color:"var(--muted)",textAlign:"center",padding:"2px 0",borderRight:"1px solid var(--border)"}}>КОРТ</div>
+                  <div style={{fontSize:9,color:"var(--muted)",textAlign:"center",padding:"2px 0"}}>ТРЕНУВАННЯ</div>
+                </div>
+              </div>
             );})}
           </div>
           <div style={{display:"grid",gridTemplateColumns:gridCols}}>

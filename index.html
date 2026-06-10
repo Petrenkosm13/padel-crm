@@ -59,18 +59,93 @@ const STATUSES=[{id:"lead",label:"Потенційний",color:"#6b7394",bg:"rg
 const LEVELS=["Початківець","Нижче середнього","Середній","Вище середнього","Просунутий"];
 const TABS=[{id:"dashboard",label:"Дашборд",icon:"⚡"},{id:"calendar",label:"Календар",icon:"📅"},{id:"contacts",label:"Контакти",icon:"👥"},{id:"reminders",label:"Нагадув.",icon:"🔔"},{id:"notes",label:"Замітки",icon:"📝"},{id:"groups",label:"Групи",icon:"🎾"},{id:"posts",label:"Пости",icon:"📣"}];
 const NOTE_TYPES=[{id:"note",label:"Замітка",emoji:"📝",color:"#9097b5"},{id:"todo",label:"Написати комусь",emoji:"✉️",color:"#4a9ef4"},{id:"event",label:"Подія",emoji:"📅",color:"#b07fff"},{id:"task",label:"Завдання",emoji:"✅",color:"#4af0b0"}];
+const CHAT_PLATFORMS=[
+  {id:"telegram",  label:"Telegram",  emoji:"✈️", base:"https://t.me/",          prefix:"https://t.me/",          placeholder:"username (без @)"},
+  {id:"whatsapp",  label:"WhatsApp",  emoji:"💬", base:"https://wa.me/",          prefix:"https://wa.me/",          placeholder:"380XXXXXXXXX (номер без +)"},
+  {id:"instagram", label:"Instagram", emoji:"📸", base:"https://instagram.com/",  prefix:"https://instagram.com/",  placeholder:"username"},
+  {id:"facebook",  label:"Messenger", emoji:"📘", base:"https://m.me/",           prefix:"https://m.me/",           placeholder:"username або ID"},
+  {id:"threads",   label:"Threads",   emoji:"🧵", base:"https://threads.net/@",   prefix:"https://threads.net/@",   placeholder:"username (без @)"},
+  {id:"viber",     label:"Viber",     emoji:"📳", base:"viber://chat?number=",    prefix:"viber://chat?number=",    placeholder:"380XXXXXXXXX (номер без +)"},
+];
+
+function ChatLinkPicker({value,onChange}){
+  // Parse existing value to detect platform
+  const detect=()=>{
+    if(!value)return{plat:"",nick:""};
+    const p=CHAT_PLATFORMS.find(p=>value.startsWith(p.prefix));
+    if(p)return{plat:p.id,nick:value.slice(p.prefix.length)};
+    return{plat:"",nick:value};
+  };
+  const {plat:initPlat,nick:initNick}=detect();
+  const [plat,setPlat]=useState(initPlat);
+  const [nick,setNick]=useState(initNick);
+
+  const cp=CHAT_PLATFORMS.find(p=>p.id===plat);
+
+  const update=(newPlat,newNick)=>{
+    const p=CHAT_PLATFORMS.find(x=>x.id===newPlat);
+    if(p&&newNick.trim()){
+      onChange(p.prefix+newNick.trim());
+    } else {
+      onChange("");
+    }
+  };
+
+  return(
+    <Row label="Посилання на чат">
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
+        {CHAT_PLATFORMS.map(p=>{
+          const sel=plat===p.id;
+          return(
+            <button key={p.id} onClick={()=>{setPlat(p.id);update(p.id,nick);}}
+              style={{padding:"5px 10px",borderRadius:8,
+                border:`1px solid ${sel?"var(--accent)":"var(--border2)"}`,
+                background:sel?"rgba(200,241,53,.08)":"var(--surface2)",
+                color:sel?"var(--accent)":"var(--muted)",
+                fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+              {p.emoji} {p.label}
+            </button>
+          );
+        })}
+        <button onClick={()=>{setPlat("");setNick("");onChange("");}}
+          style={{padding:"5px 10px",borderRadius:8,border:"1px solid var(--border2)",
+            background:"var(--surface2)",color:"var(--muted)",
+            fontFamily:"'DM Sans',sans-serif",fontSize:12,cursor:"pointer"}}>✕ Очистити</button>
+      </div>
+      {plat&&(
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:12,color:"var(--muted)",whiteSpace:"nowrap",
+            padding:"7px 8px",background:"var(--surface2)",border:"1px solid var(--border2)",
+            borderRadius:"8px 0 0 8px",borderRight:"none"}}>
+            {cp.prefix}
+          </span>
+          <input style={{...inp,borderRadius:"0 8px 8px 0",flex:1}}
+            placeholder={cp.placeholder}
+            value={nick}
+            onChange={e=>{setNick(e.target.value);update(plat,e.target.value);}}/>
+        </div>
+      )}
+      {!plat&&<input style={inp} placeholder="Оберіть платформу вище..." disabled
+        style={{...inp,opacity:.4,cursor:"not-allowed"}}/>}
+      {value&&<div style={{marginTop:5,fontSize:11,color:"var(--accent2)"}}>
+        Посилання: {value}
+      </div>}
+    </Row>
+  );
+}
+
 const WEEK_DAYS=[{id:1,short:"Пн",long:"Понеділок"},{id:2,short:"Вт",long:"Вівторок"},{id:3,short:"Ср",long:"Середа"},{id:4,short:"Чт",long:"Четвер"},{id:5,short:"Пт",long:"П'ятниця"},{id:6,short:"Сб",long:"Субота"},{id:0,short:"Нд",long:"Неділя"}];
 const TRAIN_TYPES=[{id:"padel_ind",label:"Падл індивідуальний",color:"#9b8ef4",bg:"rgba(155,142,244,.18)"},{id:"padel_grp",label:"Падл груповий",color:"#f4a23a",bg:"rgba(244,162,58,.18)"},{id:"squash_ind",label:"Сквош індивідуальний",color:"#4a9ef4",bg:"rgba(74,158,244,.18)"},{id:"my_train",label:"Моє тренування",color:"#f46a6a",bg:"rgba(244,106,106,.18)"},{id:"padel_aly",label:"Падл груповий (Alyona)",color:"#f4c53a",bg:"rgba(244,197,58,.18)"}];
 const COURTS=[{id:"padel",label:"Падл",color:"#4af0b0"},{id:"squash",label:"Сквош",color:"#4a9ef4"}];
 const HOURS=Array.from({length:17},(_,i)=>i+7);
 const TODAY=(()=>{const n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;})();
-const DAY_NAMES_SHORT=["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
+const DAY_NAMES_SHORT=["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
 const MONTH_NAMES=["Січ","Лют","Бер","Квіт","Трав","Черв","Лип","Серп","Вер","Жовт","Лист","Груд"];
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
-function getStatus(id){return STATUSES.find(s=>s.id===id)||STATUSES[0];}
+function getStatus(id,sts){const arr=sts||STATUSES;return arr.find(s=>s.id===id)||arr[0];}
 function getChannel(id){return CHANNELS.find(c=>c.id===id);}
 function getTrainType(id){return TRAIN_TYPES.find(t=>t.id===id)||TRAIN_TYPES[0];}
 function getCourt(id){return COURTS.find(c=>c.id===id);}
@@ -95,7 +170,7 @@ const iconBtn={padding:"5px 8px",borderRadius:8,background:"var(--surface2)",bor
 const fOn={padding:"5px 11px",borderRadius:20,border:"1px solid var(--accent)",background:"rgba(200,241,53,.08)",color:"var(--accent)",fontSize:12,fontWeight:600,cursor:"pointer"};
 const fOff={padding:"5px 11px",borderRadius:20,border:"1px solid var(--border2)",background:"var(--surface2)",color:"var(--muted)",fontSize:12,fontWeight:600,cursor:"pointer"};
 
-function StatusPill({status}){const s=getStatus(status);return <span style={{padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:700,background:s.bg,color:s.color}}>{s.label}</span>;}
+function StatusPill({status,statuses}){const s=getStatus(status,statuses);const bg=s.bg||(s.color+"22");return <span style={{padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:700,background:bg,color:s.color}}>{s.label}</span>;}
 function ChannelChip({channel}){const c=getChannel(channel);if(!c)return null;return <span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 7px",borderRadius:6,fontSize:11,fontWeight:600,background:"var(--surface2)",border:"1px solid var(--border2)",color:c.color}}>{c.emoji} {c.label}</span>;}
 function ProgBar({pct,color="var(--accent)",h=6}){return <div style={{height:h,borderRadius:h/2,background:"var(--surface2)",overflow:"hidden"}}><div style={{height:"100%",borderRadius:h/2,background:color,width:Math.min(pct||0,100)+"%",transition:"width .3s"}}/></div>;}
 function Empty({icon,text,sub}){return <div style={{textAlign:"center",color:"var(--muted)",padding:"48px 0"}}><div style={{fontSize:36,marginBottom:8}}>{icon}</div><div>{text}</div>{sub&&<div style={{fontSize:12,marginTop:4}}>{sub}</div>}</div>;}
@@ -109,6 +184,38 @@ function App(){
   const saveTimer=useRef(null);
   const [tab,setTab]=useState("dashboard");
   const [dark,setDark]=useState(()=>lsGet("padel_theme")!=="light");
+  const [settings,setSettings]=useState(()=>lsGet("padel_settings")||{
+    trainTypes:[
+      {id:"padel_ind",label:"Падл індивідуальний",color:"#9b8ef4"},
+      {id:"padel_grp",label:"Падл груповий",color:"#f4a23a"},
+      {id:"squash_ind",label:"Сквош індивідуальний",color:"#4a9ef4"},
+      {id:"my_train",label:"Моє тренування",color:"#f46a6a"},
+      {id:"padel_aly",label:"Падл груповий (Alyona)",color:"#f4c53a"},
+    ],
+    courtTypes:[
+      {id:"padel",label:"Падл",color:"#4af0b0"},
+      {id:"squash",label:"Сквош",color:"#4a9ef4"},
+    ],
+    statuses:[
+      {id:"lead",label:"Потенційний",color:"#6b7394"},
+      {id:"new",label:"Новий",color:"#c8f135"},
+      {id:"once",label:"Був 1 раз",color:"#ffb830"},
+      {id:"regular",label:"Регулярний",color:"#4af0b0"},
+      {id:"group",label:"Хоче в групу",color:"#b07fff"},
+      {id:"inactive",label:"Неактивний",color:"#ff4f6a"},
+    ],
+    levels:["Початківець","Нижче середнього","Середній","Вище середнього","Просунутий"],
+    channels:[
+      {id:"facebook",label:"Facebook",color:"#1877F2"},
+      {id:"threads",label:"Threads",color:"#aaa"},
+      {id:"instagram",label:"Instagram",color:"#E1306C"},
+      {id:"whatsapp",label:"WhatsApp",color:"#25D366"},
+      {id:"telegram",label:"Telegram",color:"#229ED9"},
+      {id:"personal",label:"Особисто",color:"#c8f135"},
+    ],
+  });
+  const [showSettings,setShowSettings]=useState(false);
+  const updSettings=(v)=>{setSettings(v);lsSet("padel_settings",v);};
   const [contacts,setContacts]=useState(()=>lsGet("padel_contacts")||[]);
   const [groups,setGroups]=useState(()=>lsGet("padel_groups")||[]);
   const [posts,setPosts]=useState(()=>lsGet("padel_posts")||[]);
@@ -180,6 +287,10 @@ function App(){
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:22,fontWeight:700,letterSpacing:3,color:"var(--accent)"}}>PADEL<span style={{color:"var(--accent2)"}}>CRM</span></div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <button onClick={()=>setDark(d=>!d)} style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:8,padding:"5px 9px",cursor:"pointer",fontSize:16,lineHeight:1,color:"var(--text)",display:"flex",alignItems:"center"}}>{dark?"[ Світла ]":"[ Темна ]"}</button>
+          <button onClick={()=>setShowSettings(true)}
+            style={{background:"var(--surface2)",border:"1px solid var(--border2)",borderRadius:8,
+              padding:"5px 9px",cursor:"pointer",fontSize:15,lineHeight:1,color:"var(--muted)",
+              display:"flex",alignItems:"center"}} title="Налаштування">&#9881;</button>
           <div style={{width:7,height:7,borderRadius:"50%",background:"var(--accent2)",flexShrink:0}}/>
         </div>
       </header>
@@ -194,20 +305,21 @@ function App(){
       </nav>
       <main style={{flex:1,padding:tab==="calendar"?0:14,maxWidth:tab==="calendar"?"100%":860,margin:"0 auto",width:"100%"}}>
         {tab==="dashboard"&&<Dashboard contacts={contacts} groups={groups} onTabChange={setTab}/>}
-        {tab==="calendar"&&<CalendarView courts={courts} trainings={trainings} onUpdateCourts={updCo} onUpdateTrainings={updTr} contacts={contacts} onOpenContact={openDetail} showToast={showToast}/>}
-        {tab==="contacts"&&<Contacts contacts={contacts} onUpdate={updC} onOpen={openContact} onDetail={openDetail} showToast={showToast}/>}
+        {tab==="calendar"&&<CalendarView courts={courts} trainings={trainings} onUpdateCourts={updCo} onUpdateTrainings={updTr} contacts={contacts} onOpenContact={openDetail} settings={settings} showToast={showToast}/>}
+        {tab==="contacts"&&<Contacts contacts={contacts} onUpdate={updC} onOpen={openContact} onDetail={openDetail} settings={settings} showToast={showToast}/>}
         {tab==="reminders"&&<Reminders contacts={contacts} onUpdate={updC} notes={notes} onUpdateNotes={updN} showToast={showToast} onDetail={openDetail}/>}
         {tab==="notes"&&<Notes notes={notes} contacts={contacts} onUpdate={updN} showToast={showToast}/>}
-        {tab==="groups"&&<Groups groups={groups} contacts={contacts} onUpdate={updG} onOpen={openGroup} showToast={showToast}/>}
+        {tab==="groups"&&<Groups groups={groups} contacts={contacts} onUpdate={updG} onOpen={openGroup} settings={settings} showToast={showToast}/>}
         {tab==="posts"&&<Posts posts={posts} onUpdate={updP} onOpen={openPost} showToast={showToast}/>}
       </main>
       {tab!=="dashboard"&&tab!=="calendar"&&tab!=="reminders"&&<button onClick={fabAction} style={{position:"fixed",bottom:20,right:20,borderRadius:"50%",width:52,height:52,fontSize:26,display:"flex",alignItems:"center",justifyContent:"center",background:"var(--accent)",color:"var(--bg)",border:"none",cursor:"pointer",boxShadow:"0 4px 24px rgba(100,180,0,.35)",zIndex:90}}>+</button>}
-      {modal==="contact"&&<ContactModal item={editItem} contacts={contacts} onClose={closeModal} onSave={v=>{updC(v);closeModal();showToast("Збережено ✓");}}/>}
+      {modal==="contact"&&<ContactModal item={editItem} contacts={contacts} settings={settings} onClose={closeModal} onSave={v=>{updC(v);closeModal();showToast("Збережено ✓");}}/>}
       {modal==="group"&&<GroupModal item={editItem} groups={groups} contacts={contacts} onClose={closeModal} onSave={v=>{updG(v);closeModal();showToast("Збережено ✓");}}/>}
       {modal==="post"&&<PostModal item={editItem} posts={posts} onClose={closeModal} onSave={v=>{updP(v);closeModal();showToast("Пост збережено ✓");}}/>}
       {modal==="note"&&<NoteModal item={editItem||{_new:true}} contacts={contacts} notes={notes} onClose={closeModal} onSave={v=>{updN(v);closeModal();showToast("Збережено ✓");}}/>}
       {modal==="detail"&&<ContactDetail id={detailId} contacts={contacts} onClose={closeModal} onEdit={()=>{closeModal();const c=contacts.find(x=>x.id===detailId);openContact(c);}} onUpdate={updC} showToast={showToast}/>}
       {toast&&<div style={{position:"fixed",bottom:20,left:"50%",transform:"translateX(-50%)",background:"var(--accent)",color:"var(--bg)",padding:"8px 18px",borderRadius:20,fontSize:13,fontWeight:600,zIndex:999,pointerEvents:"none",whiteSpace:"nowrap"}}>{toast}</div>}
+      {showSettings&&<SettingsModal settings={settings} onClose={()=>setShowSettings(false)} onSave={(v)=>{updSettings(v);setShowSettings(false);showToast("Налаштування збережено ✓");}}/>}
     </div>
   );
 }
@@ -237,17 +349,26 @@ function Dashboard({contacts,groups,onTabChange}){
   );
 }
 
-function Contacts({contacts,onUpdate,onOpen,onDetail,showToast}){
+function Contacts({contacts,onUpdate,onOpen,onDetail,settings,showToast}){
   const [search,setSearch]=useState("");
   const [fSt,setFSt]=useState("all");
-  const filtered=contacts.filter(c=>{const ms=c.name.toLowerCase().includes(search.toLowerCase())||(c.note||"").toLowerCase().includes(search.toLowerCase())||(c.contact||"").includes(search);return ms&&(fSt==="all"||c.status===fSt);});
+  const [fLvl,setFLvl]=useState("all");
+  const filtered=contacts.filter(c=>{const ms=c.name.toLowerCase().includes(search.toLowerCase())||(c.note||"").toLowerCase().includes(search.toLowerCase())||(c.contact||"").includes(search);return ms&&(fSt==="all"||c.status===fSt)&&(fLvl==="all"||c.level===fLvl);});
   const del=(id)=>{onUpdate(contacts.filter(c=>c.id!==id));showToast("Видалено");};
   const markW=(id)=>{onUpdate(contacts.map(c=>c.id===id?{...c,remindDone:true,remindDate:null}:c));showToast("Позначено ✓");};
   return(
     <div>
       <div style={secTitle}>КОНТАКТИ <span style={{color:"var(--muted)",fontSize:16}}>({filtered.length})</span></div>
       <div style={{position:"relative",marginBottom:12}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"var(--muted)",fontSize:13,pointerEvents:"none"}}>🔍</span><input style={{...inp,paddingLeft:32}} placeholder="Пошук по імені, нотатці, телефону..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}><button style={fSt==="all"?fOn:fOff} onClick={()=>setFSt("all")}>Всі ({contacts.length})</button>{STATUSES.map(s=>{const cnt=contacts.filter(c=>c.status===s.id).length;if(!cnt)return null;return <button key={s.id} style={fSt===s.id?fOn:fOff} onClick={()=>setFSt(s.id)}>{s.label} ({cnt})</button>;})}</div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
+        <button style={fSt==="all"?fOn:fOff} onClick={()=>setFSt("all")}>Всі ({contacts.length})</button>
+        {(settings?.statuses||STATUSES).map(s=>{const cnt=contacts.filter(c=>c.status===s.id).length;if(!cnt)return null;return <button key={s.id} style={fSt===s.id?fOn:fOff} onClick={()=>setFSt(s.id)}>{s.label} ({cnt})</button>;})}
+      </div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12,alignItems:"center"}}>
+        <span style={{fontSize:11,color:"var(--muted)",fontWeight:600,letterSpacing:.4}}>Рівень:</span>
+        <button style={fLvl==="all"?fOn:fOff} onClick={()=>setFLvl("all")}>Всі</button>
+        {(settings?.levels||LEVELS).map(l=>{const cnt=contacts.filter(c=>c.level===l).length;if(!cnt)return null;return <button key={l} style={fLvl===l?fOn:fOff} onClick={()=>setFLvl(l)}>{l} ({cnt})</button>;})}
+      </div>
       {filtered.length===0&&<Empty icon="👥" text="Контактів не знайдено" sub="Натисни + щоб додати"/>}
       {filtered.map(c=>(
         <div key={c.id} style={card}>
@@ -281,7 +402,17 @@ function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast}){
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}><StatusPill status={c.status}/>{c.channels?.map(ch=><ChannelChip key={ch} channel={ch}/>)}</div>
         {c.level&&<div style={{color:"var(--text2)",fontSize:13,marginBottom:4}}>🎾 {c.level}</div>}
         {c.contact&&<div style={{color:"var(--accent2)",fontSize:13,marginBottom:4}}>📱 {c.contact}</div>}
-        {c.chatLink&&<a href={c.chatLink} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:6,color:"#4a9ef4",fontSize:13,marginBottom:10,textDecoration:"none",padding:"4px 10px",background:"rgba(74,158,244,.1)",borderRadius:8,border:"1px solid rgba(74,158,244,.25)"}}>Перейти в чат</a>}
+        {c.chatLink&&(()=>{
+  const pl=CHAT_PLATFORMS.find(p=>c.chatLink.startsWith(p.base));
+  return(
+    <a href={c.chatLink} target="_blank" rel="noreferrer"
+      style={{display:"inline-flex",alignItems:"center",gap:6,color:"#4a9ef4",fontSize:13,
+        marginBottom:10,textDecoration:"none",padding:"4px 10px",
+        background:"rgba(74,158,244,.1)",borderRadius:8,border:"1px solid rgba(74,158,244,.25)"}}>
+      {pl?pl.emoji+" "+pl.label+" — перейти в чат":"Перейти в чат"}
+    </a>
+  );
+})()}
         {c.note&&<div style={{marginBottom:14}}><div style={{fontSize:11,fontWeight:600,color:"var(--muted)",textTransform:"uppercase",letterSpacing:.6,marginBottom:6}}>Нотатка</div><div style={{background:"var(--surface2)",borderRadius:8,padding:10,color:"var(--text2)",fontSize:13,lineHeight:1.55}}>{c.note}</div></div>}
         {c.remindDate&&!c.remindDone&&<div style={{background:"rgba(255,184,48,.08)",border:"1px solid rgba(255,184,48,.2)",borderRadius:8,padding:10,marginBottom:14}}><span style={{color:"var(--warn)",fontSize:13,fontWeight:600}}>🔔 Написати: {formatDate(c.remindDate)}</span></div>}
         <div style={{height:1,background:"var(--border)",margin:"14px 0"}}/>
@@ -294,7 +425,7 @@ function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast}){
   );
 }
 
-function ContactModal({item,contacts,onClose,onSave}){
+function ContactModal({item,contacts,settings,onClose,onSave}){
   const [form,setForm]=useState(item||{id:uid(),name:"",channels:[],status:"new",level:"",note:"",contact:"",remindDate:"",remindDone:false,history:[]});
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
   const tgCh=(id)=>set("channels",(form.channels||[]).includes(id)?(form.channels||[]).filter(c=>c!==id):[...(form.channels||[]),id]);
@@ -304,11 +435,11 @@ function ContactModal({item,contacts,onClose,onSave}){
       <div style={modal}>
         <div style={modalTitle}><span>{item?"Редагувати":"Новий контакт"}</span><button style={{background:"none",border:"none",color:"var(--muted)",fontSize:20,cursor:"pointer"}} onClick={onClose}>✕</button></div>
         <Row label="Ім'я *"><input style={inp} placeholder="Ім'я та прізвище" value={form.name} onChange={e=>set("name",e.target.value)}/></Row>
-        <Row label="Де спілкуємось"><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{CHANNELS.map(ch=>{const s=(form.channels||[]).includes(ch.id);return <button key={ch.id} onClick={()=>tgCh(ch.id)} style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${s?ch.color:"var(--border2)"}`,background:s?"rgba(200,241,53,.08)":"var(--surface2)",color:s?ch.color:"var(--muted)",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,cursor:"pointer"}}>{ch.emoji} {ch.label}</button>;})}</div></Row>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Row label="Статус"><select style={inp} value={form.status} onChange={e=>set("status",e.target.value)}>{STATUSES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></Row><Row label="Рівень"><select style={inp} value={form.level} onChange={e=>set("level",e.target.value)}><option value="">Невідомо</option>{LEVELS.map(l=><option key={l}>{l}</option>)}</select></Row></div>
+        <Row label="Де спілкуємось"><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{(settings?.channels||CHANNELS).map(ch=>{const s=(form.channels||[]).includes(ch.id);return <button key={ch.id} onClick={()=>tgCh(ch.id)} style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${s?ch.color:"var(--border2)"}`,background:s?"rgba(200,241,53,.08)":"var(--surface2)",color:s?ch.color:"var(--muted)",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,cursor:"pointer"}}>{ch.label}</button>;})}</div></Row>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Row label="Статус"><select style={inp} value={form.status} onChange={e=>set("status",e.target.value)}>{(settings?.statuses||STATUSES).map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></Row><Row label="Рівень"><select style={inp} value={form.level} onChange={e=>set("level",e.target.value)}><option value="">Невідомо</option>{(settings?.levels||LEVELS).map(l=><option key={l}>{l}</option>)}</select></Row></div>
         <Row label="Нотатка"><textarea style={{...inp,minHeight:64}} placeholder="Хоче групове, жде набору..." value={form.note} onChange={e=>set("note",e.target.value)}/></Row>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Row label="Телефон / Нікнейм"><input style={inp} placeholder="+380..." value={form.contact} onChange={e=>set("contact",e.target.value)}/></Row><Row label="Написати до"><input style={inp} type="date" value={form.remindDate} onChange={e=>{set("remindDate",e.target.value);set("remindDone",false);}}/></Row></div>
-        <Row label="Посилання на чат"><input style={inp} placeholder="https://t.me/username або https://wa.me/380..." value={form.chatLink||""} onChange={e=>set("chatLink",e.target.value)}/></Row>
+        <ChatLinkPicker value={form.chatLink||""} onChange={v=>set("chatLink",v)}/>
         <div style={{display:"flex",gap:8,marginTop:4}}><button style={{...btnP,flex:1}} onClick={save}>Зберегти</button><button style={btnG} onClick={onClose}>Скасувати</button></div>
       </div>
     </div>
@@ -493,7 +624,7 @@ function NoteModal({item,contacts,notes,onClose,onSave}){
   );
 }
 
-function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contacts,onOpenContact,showToast}){
+function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contacts,onOpenContact,settings,showToast}){
   const [weekOffset,setWeekOffset]=useState(0);
   const [courtModal,setCourtModal]=useState(null);
   const [trainModal,setTrainModal]=useState(null);
@@ -555,7 +686,7 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
                   {HOURS.map((h,i)=>(<div key={h} style={{position:"absolute",top:i*CELL_H,left:0,right:0,height:CELL_H,borderBottom:"1px solid var(--cal-line)",pointerEvents:"none"}}/>))}
                   {HOURS.map((h,i)=>trainCovers(date,h)?null:(<button key={h} onClick={()=>setTrainModal({date,hour:h,isNew:true})} style={{position:"absolute",top:i*CELL_H,left:0,width:"100%",height:CELL_H,background:"transparent",border:"none",color:"var(--border2)",fontSize:16,cursor:"pointer",opacity:.5,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>))}
                   {trainings.filter(t=>t.date===date).map(t=>{
-  const tt=getTrainType(t.type);const dur=t.duration||1;const grpP=(t.players||[]).filter(Boolean);
+  const tt=(settings?.trainTypes||TRAIN_TYPES).find(x=>x.id===t.type)||(settings?.trainTypes||TRAIN_TYPES)[0];const dur=t.duration||1;const grpP=(t.players||[]).filter(Boolean);const ttBg=tt.bg||tt.color+"2e";
   const findC=(name)=>contacts.find(c=>c.name===name);
   const PName=({name,paid,size=10})=>{
     const c=findC(name);
@@ -576,7 +707,7 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
   return(
     <div key={t.id} onClick={()=>setTrainModal({...t,isNew:false})}
       style={{position:"absolute",top:topPx(t.hour)+2,left:2,right:2,height:dur*CELL_H-4,
-        background:tt.bg,border:`1px solid ${tt.color}50`,borderLeft:`3px solid ${tt.color}`,
+        background:ttBg,border:`1px solid ${tt.color}50`,borderLeft:`3px solid ${tt.color}`,
         borderRadius:5,padding:"3px 5px",cursor:"pointer",overflow:"hidden",zIndex:2,boxSizing:"border-box"}}>
       <div style={{fontSize:10,fontWeight:700,color:tt.color,lineHeight:1.3}}>{tt.label}</div>
       {t.note&&<div style={{fontSize:9,color:"var(--text2)",lineHeight:1.3,marginTop:1,fontStyle:"italic",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{t.note}</div>}
@@ -604,13 +735,13 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
           </div>
         </div>
       </div>
-      {courtModal&&<CourtModal item={courtModal} onClose={()=>setCourtModal(null)} onSave={saveCourt} onDelete={deleteCourt}/>}
-      {trainModal&&<TrainingModal item={trainModal} contacts={contacts} trainings={trainings} onClose={()=>setTrainModal(null)} onSave={saveTrain} onDelete={deleteTrain}/>}
+      {courtModal&&<CourtModal item={courtModal} settings={settings} onClose={()=>setCourtModal(null)} onSave={saveCourt} onDelete={deleteCourt}/>}
+      {trainModal&&<TrainingModal item={trainModal} contacts={contacts} trainings={trainings} settings={settings} onClose={()=>setTrainModal(null)} onSave={saveTrain} onDelete={deleteTrain}/>}
     </div>
   );
 }
 
-function CourtModal({item,onClose,onSave,onDelete}){
+function CourtModal({item,settings,onClose,onSave,onDelete}){
   const [form,setForm]=useState({id:item.id||uid(),date:item.date||TODAY,hour:item.hour||9,court:item.court||"padel",courtNum:item.courtNum||"",duration:item.duration||1,note:item.note||"",isNew:item.isNew!==false});
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
   return(
@@ -618,7 +749,7 @@ function CourtModal({item,onClose,onSave,onDelete}){
       <div style={modal}>
         <div style={modalTitle}><span style={{fontSize:14}}>{form.isNew?"Додати корт":"Редагувати корт"} · {form.date} · {String(form.hour).padStart(2,"0")}:00</span><button style={{background:"none",border:"none",color:"var(--muted)",fontSize:20,cursor:"pointer"}} onClick={onClose}>✕</button></div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 90px 1fr",gap:8,marginBottom:4}}>
-          <Row label="Тип корту"><select style={inp} value={form.court} onChange={e=>set("court",e.target.value)}><option value="padel">🟢 Падл</option><option value="squash">🔵 Сквош</option></select></Row>
+          <Row label="Тип корту"><select style={inp} value={form.court} onChange={e=>set("court",e.target.value)}>{(settings?.courtTypes||COURTS).map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></Row>
           <Row label="№ корту"><select style={inp} value={form.courtNum} onChange={e=>set("courtNum",e.target.value)}><option value="">—</option>{["1","2","3","4","5"].map(n=><option key={n} value={n}>№{n}</option>)}</select></Row>
           <Row label="Тривалість"><select style={inp} value={form.duration} onChange={e=>set("duration",parseInt(e.target.value))}>{[1,2,3,4,5,6].map(d=><option key={d} value={d}>{d} год</option>)}</select></Row>
         </div>
@@ -629,7 +760,7 @@ function CourtModal({item,onClose,onSave,onDelete}){
   );
 }
 
-function TrainingModal({item,contacts,trainings,onClose,onSave,onDelete}){
+function TrainingModal({item,contacts,trainings,settings,onClose,onSave,onDelete}){
   const isGroup=(t)=>t==="padel_grp"||t==="padel_aly";
   const initPlayers=item.players&&item.players.length?[...item.players]:["","","",""];
   const [form,setForm]=useState({id:item.id||uid(),date:item.date||TODAY,hour:item.hour||9,type:item.type||"",duration:item.duration||1,player:item.player||"",paid:item.paid||false,players:initPlayers,paidPlayers:item.paidPlayers||Array(initPlayers.length).fill(false),note:item.note||"",isNew:item.isNew!==false});
@@ -647,7 +778,7 @@ function TrainingModal({item,contacts,trainings,onClose,onSave,onDelete}){
       <div style={modal}>
         <div style={modalTitle}><span style={{fontSize:14}}>{form.isNew?"Нове тренування":"Редагувати"} · {form.date} · {String(form.hour).padStart(2,"0")}:00</span><button style={{background:"none",border:"none",color:"var(--muted)",fontSize:20,cursor:"pointer"}} onClick={onClose}>✕</button></div>
         <Row label="Тривалість"><select style={inp} value={form.duration} onChange={e=>set("duration",parseInt(e.target.value))}>{[1,2,3,4].map(d=><option key={d} value={d}>{d} год</option>)}</select></Row>
-        <Row label="Тип тренування *"><div style={{display:"flex",flexDirection:"column",gap:4}}>{TRAIN_TYPES.map(t=>{const sel=form.type===t.id;return(<button key={t.id} onClick={()=>set("type",t.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 10px",borderRadius:8,border:`1px solid ${sel?t.color:"var(--border2)"}`,background:sel?t.bg:"var(--surface2)",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif",transition:"all .15s"}}><span style={{width:9,height:9,borderRadius:"50%",background:t.color,flexShrink:0}}/><span style={{fontSize:13,fontWeight:sel?600:400,color:sel?t.color:"var(--muted)"}}>{t.label}</span></button>);})}</div></Row>
+        <Row label="Тип тренування *"><div style={{display:"flex",flexDirection:"column",gap:4}}>{(settings?.trainTypes||TRAIN_TYPES).map(t=>{const sel=form.type===t.id;const tBg=t.bg||t.color+"2e";return(<button key={t.id} onClick={()=>set("type",t.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 10px",borderRadius:8,border:`1px solid ${sel?t.color:"var(--border2)"}`,background:sel?(t.bg||t.color+"2e"):"var(--surface2)",cursor:"pointer",textAlign:"left",fontFamily:"'DM Sans',sans-serif",transition:"all .15s"}}><span style={{width:9,height:9,borderRadius:"50%",background:t.color,flexShrink:0}}/><span style={{fontSize:13,fontWeight:sel?600:400,color:sel?t.color:"var(--muted)"}}>{t.label}</span></button>);})}</div></Row>
         {!group&&(<><Row label="Ім'я гравця"><input style={inp} list="tm-c" placeholder="Ім'я та прізвище" value={form.player} onChange={e=>set("player",e.target.value)}/><datalist id="tm-c">{allNames.map(n=><option key={n} value={n}/>)}</datalist></Row><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:11}}><button onClick={()=>set("paid",!form.paid)} style={{width:22,height:22,borderRadius:6,border:`2px solid ${form.paid?"var(--accent2)":"var(--border2)"}`,background:form.paid?"rgba(74,240,176,.15)":"var(--surface2)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{form.paid&&<span style={{color:"var(--accent2)",fontSize:13}}>✓</span>}</button><span style={{fontSize:13,color:form.paid?"var(--accent2)":"var(--muted)",fontWeight:600}}>Оплачено</span></div></>)}
         {group&&(<Row label="Учасники"><datalist id="tm-cg">{allNames.map(n=><option key={n} value={n}/>)}</datalist>{form.players.map((p,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><span style={{fontSize:11,color:"var(--muted)",width:18,textAlign:"right",flexShrink:0}}>{i+1}.</span><input style={{...inp,flex:1}} list="tm-cg" placeholder={`Гравець ${i+1}`} value={p} onChange={e=>setPlayer(i,e.target.value)}/>{p&&(<button onClick={()=>togglePaidP(i)} style={{padding:"4px 8px",borderRadius:6,border:"none",flexShrink:0,background:(form.paidPlayers||[])[i]?"rgba(74,240,176,.15)":"rgba(255,79,106,.12)",color:(form.paidPlayers||[])[i]?"var(--accent2)":"var(--danger)",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,cursor:"pointer"}}>{(form.paidPlayers||[])[i]?"✅ Опл":"❌ Не опл"}</button>)}</div>))}<button onClick={addSlot} style={{...btnG,fontSize:11,padding:"5px 12px",marginTop:2}}>+ Додати гравця</button></Row>)}
         <Row label="Нотатка"><textarea style={{...inp,minHeight:44}} placeholder="Нотатка..." value={form.note} onChange={e=>set("note",e.target.value)}/></Row>
@@ -657,7 +788,7 @@ function TrainingModal({item,contacts,trainings,onClose,onSave,onDelete}){
   );
 }
 
-function Groups({groups,contacts,onUpdate,onOpen,showToast}){
+function Groups({groups,contacts,onUpdate,onOpen,settings,showToast}){
   const wantGroup=contacts.filter(c=>c.status==="group");
   const addM=(gid,name)=>{if(!name)return;onUpdate(groups.map(g=>g.id===gid&&!g.members?.includes(name)?{...g,members:[...(g.members||[]),name]}:g));};
   const remM=(gid,name)=>onUpdate(groups.map(g=>g.id===gid?{...g,members:g.members.filter(m=>m!==name)}:g));
@@ -708,7 +839,7 @@ function Groups({groups,contacts,onUpdate,onOpen,showToast}){
               ))}
               {!members.length&&<span style={{color:"#6b7394",fontSize:12}}>Учасників немає</span>}
             </div>
-            {spots>0?<select onChange={e=>{addM(g.id,e.target.value);e.target.value="";}} style={{...inp,fontSize:12}}><option value="">+ Додати учасника ({spots} місць вільно)</option>{avail.map(c=><option key={c.id} value={c.name}>{c.name} — {getStatus(c.status).label}</option>)}</select>:<div style={{color:"#ff4f6a",fontSize:12,fontWeight:600}}>🔴 Група заповнена</div>}
+            {spots>0?<select onChange={e=>{addM(g.id,e.target.value);e.target.value="";}} style={{...inp,fontSize:12}}><option value="">+ Додати учасника ({spots} місць вільно)</option>{avail.map(c=><option key={c.id} value={c.name}>{c.name} — {getStatus(c.status,settings?.statuses).label}</option>)}</select>:<div style={{color:"#ff4f6a",fontSize:12,fontWeight:600}}>🔴 Група заповнена</div>}
           </div>
         );
       })}
@@ -794,6 +925,133 @@ function PostModal({item,posts,onClose,onSave}){
   );
 }
 
+
+
+/* ══════════════════════════════════════════════════════
+   SETTINGS MODAL
+══════════════════════════════════════════════════════ */
+function SettingsModal({settings,onClose,onSave}){
+  const [form,setForm]=useState(JSON.parse(JSON.stringify(settings)));
+  const setF=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  // ── Train Types ──
+  const addTrainType=()=>setF("trainTypes",[...form.trainTypes,{id:uid(),label:"Новий тип",color:"#9097b5"}]);
+  const delTrainType=(id)=>setF("trainTypes",form.trainTypes.filter(t=>t.id!==id));
+  const updTrainType=(id,k,v)=>setF("trainTypes",form.trainTypes.map(t=>t.id===id?{...t,[k]:v}:t));
+
+  // ── Court Types ──
+  const addCourtType=()=>setF("courtTypes",[...form.courtTypes,{id:uid(),label:"Новий корт",color:"#9097b5"}]);
+  const delCourtType=(id)=>setF("courtTypes",form.courtTypes.filter(c=>c.id!==id));
+  const updCourtType=(id,k,v)=>setF("courtTypes",form.courtTypes.map(c=>c.id===id?{...c,[k]:v}:c));
+
+  // ── Statuses ──
+  const addStatus=()=>setF("statuses",[...form.statuses,{id:uid(),label:"Новий статус",color:"#9097b5"}]);
+  const delStatus=(id)=>setF("statuses",form.statuses.filter(s=>s.id!==id));
+  const updStatus=(id,k,v)=>setF("statuses",form.statuses.map(s=>s.id===id?{...s,[k]:v}:s));
+
+  // ── Levels ──
+  const [newLevel,setNewLevel]=useState("");
+  const addLevel=()=>{if(!newLevel.trim())return;setF("levels",[...form.levels,newLevel.trim()]);setNewLevel("");};
+  const delLevel=(l)=>setF("levels",form.levels.filter(x=>x!==l));
+  const updLevel=(i,v)=>{const a=[...form.levels];a[i]=v;setF("levels",a);};
+
+  // ── Channels ──
+  const addChannel=()=>setF("channels",[...form.channels,{id:uid(),label:"Новий канал",color:"#9097b5"}]);
+  const delChannel=(id)=>setF("channels",form.channels.filter(c=>c.id!==id));
+  const updChannel=(id,k,v)=>setF("channels",form.channels.map(c=>c.id===id?{...c,[k]:v}:c));
+
+  const SectionTitle=({children})=>(
+    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:16,fontWeight:700,
+      letterSpacing:1.5,color:"var(--accent)",margin:"18px 0 10px",
+      borderBottom:"1px solid var(--border)",paddingBottom:6}}>
+      {children}
+    </div>
+  );
+
+  const ColorRow=({item,onLabel,onColor,onDel})=>(
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+      <input type="color" value={item.color} onChange={e=>onColor(e.target.value)}
+        style={{width:32,height:32,borderRadius:6,border:"1px solid var(--border2)",
+          cursor:"pointer",padding:2,background:"var(--surface2)",flexShrink:0}}/>
+      <div style={{width:8,height:8,borderRadius:"50%",background:item.color,flexShrink:0}}/>
+      <input style={{...inp,flex:1}} value={item.label} onChange={e=>onLabel(e.target.value)}
+        placeholder="Назва..."/>
+      <DeleteBtn onDelete={onDel} label="" style={{padding:"5px 8px",flexShrink:0}}/>
+    </div>
+  );
+
+  return(
+    <div style={{...overlay,alignItems:"flex-start",overflowY:"auto"}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{...modal,borderRadius:16,margin:"20px auto",maxHeight:"calc(100vh - 40px)"}}>
+        <div style={modalTitle}>
+          <span>&#9881; Налаштування</span>
+          <button style={{background:"none",border:"none",color:"var(--muted)",fontSize:20,cursor:"pointer"}} onClick={onClose}>✕</button>
+        </div>
+
+        {/* Train Types */}
+        <SectionTitle>Типи тренувань</SectionTitle>
+        {form.trainTypes.map(t=>(
+          <ColorRow key={t.id} item={t}
+            onLabel={v=>updTrainType(t.id,"label",v)}
+            onColor={v=>updTrainType(t.id,"color",v)}
+            onDel={()=>delTrainType(t.id)}/>
+        ))}
+        <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addTrainType}>+ Додати тип тренування</button>
+
+        {/* Court Types */}
+        <SectionTitle>Типи кортів</SectionTitle>
+        {form.courtTypes.map(c=>(
+          <ColorRow key={c.id} item={c}
+            onLabel={v=>updCourtType(c.id,"label",v)}
+            onColor={v=>updCourtType(c.id,"color",v)}
+            onDel={()=>delCourtType(c.id)}/>
+        ))}
+        <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addCourtType}>+ Додати тип корту</button>
+
+        {/* Statuses */}
+        <SectionTitle>Статуси контактів</SectionTitle>
+        {form.statuses.map(s=>(
+          <ColorRow key={s.id} item={s}
+            onLabel={v=>updStatus(s.id,"label",v)}
+            onColor={v=>updStatus(s.id,"color",v)}
+            onDel={()=>delStatus(s.id)}/>
+        ))}
+        <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addStatus}>+ Додати статус</button>
+
+        {/* Levels */}
+        <SectionTitle>Рівні гравців</SectionTitle>
+        {form.levels.map((l,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+            <input style={{...inp,flex:1}} value={l} onChange={e=>updLevel(i,e.target.value)}/>
+            <DeleteBtn onDelete={()=>delLevel(l)} label="" style={{padding:"5px 8px",flexShrink:0}}/>
+          </div>
+        ))}
+        <div style={{display:"flex",gap:6,marginBottom:4}}>
+          <input style={{...inp,flex:1}} placeholder="Новий рівень..." value={newLevel} onChange={e=>setNewLevel(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&addLevel()}/>
+          <button style={{...btnG,fontSize:12,flexShrink:0}} onClick={addLevel}>+ Додати</button>
+        </div>
+
+        {/* Channels */}
+        <SectionTitle>Канали спілкування</SectionTitle>
+        {form.channels.map(c=>(
+          <ColorRow key={c.id} item={c}
+            onLabel={v=>updChannel(c.id,"label",v)}
+            onColor={v=>updChannel(c.id,"color",v)}
+            onDel={()=>delChannel(c.id)}/>
+        ))}
+        <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addChannel}>+ Додати канал</button>
+
+        <div style={{height:1,background:"var(--border)",margin:"16px 0"}}/>
+
+        <div style={{display:"flex",gap:8}}>
+          <button style={{...btnP,flex:1}} onClick={()=>onSave(form)}>Зберегти налаштування</button>
+          <button style={btnG} onClick={onClose}>Скасувати</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);

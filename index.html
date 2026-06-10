@@ -1169,12 +1169,17 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
   const [trainModal,setTrainModal]=useState(null);
   const dates=getWeekDates(weekOffset);
   const CELL_H=60,TIME_W=48;
-  // Dynamic column widths based on available screen width
+  // Calendar columns from settings
+  const defaultCols=[{id:"train",label:"Тренування",enabled:true,type:"training"}];
+  const activeCols=(settings?.calendarCols||defaultCols).filter(c=>c.enabled);
+  const numCols=Math.max(1,activeCols.length);
   const screenW=typeof window!=="undefined"?window.innerWidth:1400;
   const availW=screenW-TIME_W;
-  const dayW=Math.max(170,Math.floor(availW/7));
-  const COURT_W=Math.floor(dayW*0.38);
-  const TRAIN_W=dayW-COURT_W;
+  const dayW=Math.max(150,Math.floor(availW/7));
+  const colW=Math.floor(dayW/numCols);
+  const COURT_W=numCols>1?colW:0;
+  const TRAIN_W=numCols>1?(dayW-colW):dayW;
+  const dayGridCols=activeCols.map(c=>c.type==="court"?`${COURT_W}px`:`${TRAIN_W}px`).join(" ");
   const fmt=(d)=>{const dt=new Date(d+"T00:00:00");return DAY_NAMES_SHORT[(dt.getDay()+6)%7]+" "+dt.getDate()+" "+MONTH_NAMES[dt.getMonth()];};
   const rangeLabel=fmt(dates[0])+" – "+fmt(dates[6]);
   const totalH=HOURS.length*CELL_H;
@@ -1185,7 +1190,7 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
   const deleteCourt=(id)=>{onUpdateCourts(courts.filter(c=>c.id!==id));setCourtModal(null);showToast("Видалено");};
   const saveTrain=(b)=>{const{isNew,...clean}=b;const ex=trainings.find(x=>x.id===b.id);onUpdateTrainings(ex?trainings.map(x=>x.id===b.id?clean:x):[...trainings,{...clean,id:clean.id||uid()}]);setTrainModal(null);showToast("Збережено ✓");};
   const deleteTrain=(id)=>{onUpdateTrainings(trainings.filter(t=>t.id!==id));setTrainModal(null);showToast("Видалено");};
-  const gridCols=`${TIME_W}px `+dates.map(()=>`${COURT_W}px ${TRAIN_W}px`).join(" ");
+  const gridCols=`${TIME_W}px `+dates.map(()=>activeCols.map(c=>c.type==="court"?`${COURT_W}px`:`${TRAIN_W}px`).join(" ")).join(" ");
   return(
     <div style={{margin:0,display:"flex",flexDirection:"column"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 14px 4px",flexWrap:"wrap",gap:6}}>
@@ -1195,6 +1200,7 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
           <span style={{fontSize:12,fontWeight:600,color:"var(--text)",minWidth:190,textAlign:"center"}}>{rangeLabel}</span>
           <button style={iconBtn} onClick={()=>setWeekOffset(w=>w+1)}>›</button>
           <button style={{...btnG,fontSize:11,padding:"4px 10px"}} onClick={()=>setWeekOffset(0)}>Сьогодні</button>
+          <button style={{...iconBtn,fontSize:13}} title="Налаштування колонок" onClick={()=>window._showSettings&&window._showSettings()}>&#9881;</button>
         </div>
       </div>
       {/* Outer wrapper: fixed time column + scrollable days */}
@@ -1209,9 +1215,13 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
                   <span style={{fontSize:10,color:"var(--muted)"}}>{DAY_NAMES_SHORT[i]} </span>
                   <span style={{fontSize:13,fontWeight:700,color:today?"var(--accent)":"var(--text)"}}>{dt.getDate()} {MONTH_NAMES[dt.getMonth()]}</span>
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:`${COURT_W}px ${TRAIN_W}px`}}>
-                  <div style={{fontSize:9,color:"var(--muted)",textAlign:"center",padding:"2px 0",borderRight:"1px solid var(--border)"}}>КОРТ</div>
-                  <div style={{fontSize:9,color:"var(--muted)",textAlign:"center",padding:"2px 0"}}>ТРЕНУВАННЯ</div>
+                <div style={{display:"grid",gridTemplateColumns:dayGridCols}}>
+                  {activeCols.map((col,ci)=>(
+                    <div key={col.id} style={{fontSize:9,color:"var(--muted)",textAlign:"center",padding:"2px 0",
+                      borderRight:ci<activeCols.length-1?"1px solid var(--border)":"none"}}>
+                      {col.label.toUpperCase()}
+                    </div>
+                  ))}
                 </div>
               </div>
             );})}
@@ -1739,6 +1749,28 @@ function SettingsModal({settings,onClose,onSave}){
             i<form.channels.length-1?()=>{const a=[...form.channels];[a[i],a[i+1]]=[a[i+1],a[i]];setF("channels",a);}:null,
             true)}</div>)}
         <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addChannel}>+ Додати канал</button>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:16,fontWeight:700,letterSpacing:1.5,color:"var(--accent)",margin:"18px 0 10px",borderBottom:"1px solid var(--border)",paddingBottom:6}}>Колонки календаря</div>
+        <div style={{fontSize:11,color:"var(--muted)",marginBottom:8}}>Налаштуй що відображається в кожній колонці календаря</div>
+        {(form.calendarCols||[{id:"train",label:"Тренування",enabled:true,type:"training"}]).map((col,i,arr)=>(
+          <div key={col.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+            <button onClick={()=>{const a=[...(form.calendarCols||[])];a[i]={...a[i],enabled:!a[i].enabled};setF("calendarCols",a);}}
+              style={{width:22,height:22,borderRadius:6,border:`2px solid ${col.enabled?"var(--accent2)":"var(--border2)"}`,
+                background:col.enabled?"rgba(74,240,176,.15)":"var(--surface2)",cursor:"pointer",
+                display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              {col.enabled&&<span style={{color:"var(--accent2)",fontSize:11}}>&#10003;</span>}
+            </button>
+            <select style={{...inp,width:120,flexShrink:0}} value={col.type}
+              onChange={e=>{const a=[...(form.calendarCols||[])];a[i]={...a[i],type:e.target.value};setF("calendarCols",a);}}>
+              <option value="training">Тренування</option>
+              <option value="court">Місце/Корт</option>
+            </select>
+            <input style={{...inp,flex:1}} value={col.label}
+              onChange={e=>{const a=[...(form.calendarCols||[])];a[i]={...a[i],label:e.target.value};setF("calendarCols",a);}}/>
+            {arr.length>1&&<DeleteBtn onDelete={()=>setF("calendarCols",(form.calendarCols||[]).filter((_,j)=>j!==i))} label="" style={{padding:"5px 8px"}}/>}
+          </div>
+        ))}
+        <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={()=>setF("calendarCols",[...(form.calendarCols||[]),{id:uid(),label:"Нова колонка",enabled:true,type:"training"}])}>+ Додати колонку</button>
+
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:16,fontWeight:700,letterSpacing:1.5,color:"var(--accent)",margin:"18px 0 10px",borderBottom:"1px solid var(--border)",paddingBottom:6}}>Блоки екрану "Сьогодні"</div>
         {(form.dashBlocks||[]).sort((a,b)=>a.order-b.order).map((block,i,arr)=>(
           <div key={block.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"6px 8px",background:"var(--surface2)",borderRadius:8,border:"1px solid var(--border2)"}}>

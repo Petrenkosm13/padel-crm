@@ -200,6 +200,8 @@ function App(){
       {id:"inactive",label:"Неактивний",color:"#ff4f6a"},
     ],
     levels:["Початківець","Нижче середнього","Середній","Вище середнього","Просунутий"],
+    calendarCols:[{id:"train",label:"Тренування",enabled:true,type:"training"},{id:"loc",label:"Локація",enabled:false,type:"court"}],
+    contactTabTemplates:[{id:"main",label:"Основна",type:"main",removable:false},{id:"params",label:"Параметри",type:"params",removable:true},{id:"history",label:"Історія",type:"history",removable:false}],
     dashBlocks:[{id:"today_trainings",label:"Тренування сьогодні",enabled:true,order:0},{id:"reminders",label:"Нагадування",enabled:true,order:1},{id:"quick_note",label:"Швидка замітка",enabled:true,order:2},{id:"week_stats",label:"Статистика тижня",enabled:false,order:3},{id:"client_activity",label:"Активність клієнтів",enabled:false,order:4},{id:"groups_block",label:"Групи",enabled:false,order:5}],
     channels:[
       {id:"facebook",label:"Facebook",color:"#1877F2"},
@@ -1771,6 +1773,29 @@ function SettingsModal({settings,onClose,onSave}){
           </div>
         ))}
         <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={()=>setF("calendarCols",[...(form.calendarCols||[]),{id:uid(),label:"Нова колонка",enabled:true,type:"training"}])}>+ Додати колонку</button>
+
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:16,fontWeight:700,letterSpacing:1.5,color:"var(--accent)",margin:"18px 0 10px",borderBottom:"1px solid var(--border)",paddingBottom:6}}>Шаблон вкладок клієнта</div>
+        <div style={{fontSize:11,color:"var(--muted)",marginBottom:8}}>Ці вкладки будуть у кожного нового клієнта за замовчуванням</div>
+        {(form.contactTabTemplates||[{id:"main",label:"Основна",type:"main",removable:false},{id:"params",label:"Параметри",type:"params",removable:true},{id:"history",label:"Історія",type:"history",removable:false}]).map((tab,i,arr)=>(
+          <div key={tab.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+            <select style={{...inp,width:110,flexShrink:0}} value={tab.type}
+              onChange={e=>{const a=[...(form.contactTabTemplates||[])];a[i]={...a[i],type:e.target.value};setF("contactTabTemplates",a);}}>
+              <option value="main">Основна</option>
+              <option value="params">Параметри</option>
+              <option value="history">Історія</option>
+              <option value="fields">Поля</option>
+              <option value="records">Записи</option>
+              <option value="checklist">Список</option>
+              <option value="text">Текст</option>
+            </select>
+            <input style={{...inp,flex:1}} value={tab.label}
+              onChange={e=>{const a=[...(form.contactTabTemplates||[])];a[i]={...a[i],label:e.target.value};setF("contactTabTemplates",a);}}/>
+            {tab.removable
+              ?<DeleteBtn onDelete={()=>setF("contactTabTemplates",(form.contactTabTemplates||[]).filter((_,j)=>j!==i))} label="" style={{padding:"5px 8px"}}/>
+              :<span style={{fontSize:11,color:"var(--muted)",padding:"0 6px",flexShrink:0}}>фікс</span>}
+          </div>
+        ))}
+        <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={()=>setF("contactTabTemplates",[...(form.contactTabTemplates||[]),{id:uid(),label:"Нова вкладка",type:"fields",removable:true}])}>+ Додати вкладку</button>
 
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:16,fontWeight:700,letterSpacing:1.5,color:"var(--accent)",margin:"18px 0 10px",borderBottom:"1px solid var(--border)",paddingBottom:6}}>Блоки екрану "Сьогодні"</div>
         {(form.dashBlocks||[]).sort((a,b)=>a.order-b.order).map((block,i,arr)=>(

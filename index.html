@@ -502,8 +502,13 @@ function Contacts({contacts,onUpdate,onOpen,onDetail,settings,showToast}){
           {c.note&&<div style={{marginTop:8,fontSize:13,color:"var(--text2)",lineHeight:1.55,cursor:"pointer"}} onClick={()=>onDetail(c)}>{c.note.slice(0,120)}{c.note.length>120?"...":""}</div>}
           {c.remindDate&&!c.remindDone&&<div style={{display:"inline-flex",alignItems:"center",gap:4,background:"var(--surface2)",border:"1px solid var(--border)",borderRadius:6,padding:"3px 8px",fontSize:11,color:c.remindDate<=TODAY?"var(--danger)":"var(--warn)",marginTop:5}}>🔔 {c.remindDate<=TODAY?"⚠️ Написати!":"Написати: "+formatDate(c.remindDate)}</div>}
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
-            {c.chatLink&&(()=>{const pl=CHAT_PLATFORMS.find(p=>c.chatLink.startsWith(p.base));return <a href={c.chatLink} target="_blank" rel="noreferrer" style={{...btnT,textDecoration:"none",fontSize:11}}>{pl?pl.label+" →":"Чат →"}</a>;})()}
-            {!c.chatLink&&c.contact&&<a href={"tel:"+c.contact} style={{...btnG,textDecoration:"none",fontSize:11}}>📱 {c.contact}</a>}
+            {c.chatLink&&(()=>{
+              const pl=CHAT_PLATFORMS.find(p=>c.chatLink.startsWith(p.base));
+              return <a href={c.chatLink} target="_blank" rel="noreferrer"
+                style={{...btnT,textDecoration:"none",fontSize:11,padding:"5px 12px"}}>
+                {pl?pl.label+" →":"Чат →"}
+              </a>;
+            })()}
             {c.remindDate&&!c.remindDone&&<button style={btnT} onClick={()=>markW(c.id)}>✅ Написав</button>}
             <DeleteBtn onDelete={()=>del(c.id)} label=""/>
           </div>
@@ -893,7 +898,7 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
       {dur>1&&<div style={{position:"absolute",bottom:2,right:4,fontSize:9,color:"var(--muted)"}}>{dur}г</div>}
     </div>
   );
-})}}
+})}
                 </div>
               </div>
             ))}

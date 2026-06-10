@@ -1176,10 +1176,11 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
   const screenW=typeof window!=="undefined"?window.innerWidth:1400;
   const availW=screenW-TIME_W;
   const dayW=Math.max(150,Math.floor(availW/7));
-  const colW=Math.floor(dayW/numCols);
-  const COURT_W=numCols>1?colW:0;
-  const TRAIN_W=numCols>1?(dayW-colW):dayW;
-  const dayGridCols=activeCols.map(c=>c.type==="court"?`${COURT_W}px`:`${TRAIN_W}px`).join(" ");
+  // Court col = 35% of day, training = 65%
+  const COURT_W=numCols>1?Math.floor(dayW*0.35):0;
+  const TRAIN_W=numCols>1?(dayW-COURT_W):dayW;
+  const getColW=(col)=>col.type==="court"?COURT_W:TRAIN_W;
+  const dayGridCols=activeCols.map(c=>`${getColW(c)}px`).join(" ");
   const fmt=(d)=>{const dt=new Date(d+"T00:00:00");return DAY_NAMES_SHORT[(dt.getDay()+6)%7]+" "+dt.getDate()+" "+MONTH_NAMES[dt.getMonth()];};
   const rangeLabel=fmt(dates[0])+" – "+fmt(dates[6]);
   const totalH=HOURS.length*CELL_H;
@@ -1190,7 +1191,7 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
   const deleteCourt=(id)=>{onUpdateCourts(courts.filter(c=>c.id!==id));setCourtModal(null);showToast("Видалено");};
   const saveTrain=(b)=>{const{isNew,...clean}=b;const ex=trainings.find(x=>x.id===b.id);onUpdateTrainings(ex?trainings.map(x=>x.id===b.id?clean:x):[...trainings,{...clean,id:clean.id||uid()}]);setTrainModal(null);showToast("Збережено ✓");};
   const deleteTrain=(id)=>{onUpdateTrainings(trainings.filter(t=>t.id!==id));setTrainModal(null);showToast("Видалено");};
-  const gridCols=`${TIME_W}px `+dates.map(()=>activeCols.map(c=>c.type==="court"?`${COURT_W}px`:`${TRAIN_W}px`).join(" ")).join(" ");
+  const gridCols=`${TIME_W}px `+dates.map(()=>activeCols.map(c=>`${getColW(c)}px`).join(" ")).join(" ");
   return(
     <div style={{margin:0,display:"flex",flexDirection:"column"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 14px 4px",flexWrap:"wrap",gap:6}}>
@@ -1210,7 +1211,7 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
           <div style={{display:"grid",gridTemplateColumns:gridCols,position:"sticky",top:0,zIndex:40,background:"var(--bg)",borderBottom:"2px solid var(--border)"}}>
             <div style={{position:"sticky",left:0,zIndex:50,background:"var(--bg)",borderRight:"1px solid var(--border)"}} />
             {dates.map((d,i)=>{const today=d===TODAY;const dt=new Date(d+"T00:00:00");return(
-              <div key={d} style={{gridColumn:"span 2",borderLeft:"1px solid var(--border)",display:"flex",flexDirection:"column"}}>
+              <div key={d} style={{gridColumn:`span ${activeCols.length}`,borderLeft:"1px solid var(--border)",display:"flex",flexDirection:"column"}}>
                 <div style={{textAlign:"center",padding:"5px 4px 2px",borderBottom:"1px solid var(--border2)",background:today?"rgba(200,241,53,.07)":"transparent"}}>
                   <span style={{fontSize:10,color:"var(--muted)"}}>{DAY_NAMES_SHORT[i]} </span>
                   <span style={{fontSize:13,fontWeight:700,color:today?"var(--accent)":"var(--text)"}}>{dt.getDate()} {MONTH_NAMES[dt.getMonth()]}</span>
@@ -1234,12 +1235,12 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
             </div>
             {dates.map(date=>(
               <div key={date} style={{display:"contents"}}>
-                <div style={{borderLeft:"1px solid var(--border)",borderRight:"1px solid var(--border)",position:"relative",height:totalH,background:"rgba(255,255,255,.005)"}}>
+                {activeCols.some(c=>c.type==="court")&&<div style={{borderLeft:"1px solid var(--border)",borderRight:"1px solid var(--border)",position:"relative",height:totalH,background:"rgba(255,255,255,.005)"}}>
                   {HOURS.map((h,i)=>(<div key={h} style={{position:"absolute",top:i*CELL_H,left:0,right:0,height:CELL_H,borderBottom:"1px solid var(--cal-line)",pointerEvents:"none"}}/>))}
                   {HOURS.map((h,i)=>courtCovers(date,h)?null:(<button key={h} onClick={()=>setCourtModal({date,hour:h,isNew:true})} style={{position:"absolute",top:i*CELL_H,left:0,width:"100%",height:CELL_H,background:"transparent",border:"none",color:"var(--border2)",fontSize:16,cursor:"pointer",opacity:.5,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>))}
                   {courts.filter(c=>c.date===date).map(c=>{const ct=(settings?.courtTypes||COURTS).find(x=>x.id===c.court);const dur=c.duration||1;const color=ct?ct.color:"var(--accent2)";return(<div key={c.id} onClick={()=>setCourtModal({...c,isNew:false})} style={{position:"absolute",top:topPx(c.hour)+2,left:2,right:2,height:dur*CELL_H-4,background:color?(color.startsWith("#")?color+"22":"rgba(74,240,176,.15)"):"rgba(74,240,176,.15)",border:`1px solid ${color||"#4af0b0"}`,borderLeft:`3px solid ${color||"#4af0b0"}`,borderRadius:5,padding:"3px 5px",cursor:"pointer",overflow:"hidden",zIndex:2,boxSizing:"border-box"}}><div style={{fontSize:10,fontWeight:700,color:color||"#4af0b0",lineHeight:1.2}}>{ct?ct.label:"Корт"}</div>{c.courtNum&&<div style={{fontSize:9,opacity:.8,color:color||"#4af0b0"}}>№{c.courtNum}</div>}{dur>1&&<div style={{fontSize:9,color:"var(--muted)",marginTop:1}}>{dur} год</div>}</div>);})}
-                </div>
-                <div style={{position:"relative",height:totalH}}>
+                </div>}
+                <div style={{position:"relative",height:totalH,borderLeft:activeCols.some(c=>c.type==="court")?"none":"1px solid var(--border)"}}>
                   {HOURS.map((h,i)=>(<div key={h} style={{position:"absolute",top:i*CELL_H,left:0,right:0,height:CELL_H,borderBottom:"1px solid var(--cal-line)",pointerEvents:"none"}}/>))}
                   {HOURS.map((h,i)=>trainCovers(date,h)?null:(<button key={h} onClick={()=>setTrainModal({date,hour:h,isNew:true})} style={{position:"absolute",top:i*CELL_H,left:0,width:"100%",height:CELL_H,background:"transparent",border:"none",color:"var(--border2)",fontSize:16,cursor:"pointer",opacity:.5,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>))}
                   {trainings.filter(t=>t.date===date).map(t=>{

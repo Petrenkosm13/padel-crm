@@ -186,16 +186,11 @@ function App(){
   const [dark,setDark]=useState(()=>lsGet("padel_theme")!=="light");
   const [settings,setSettings]=useState(()=>lsGet("padel_settings")||{
     trainTypes:[
-      {id:"padel_ind",label:"Падл індивідуальний",color:"#9b8ef4"},
-      {id:"padel_grp",label:"Падл груповий",color:"#f4a23a"},
-      {id:"squash_ind",label:"Сквош індивідуальний",color:"#4a9ef4"},
-      {id:"my_train",label:"Моє тренування",color:"#f46a6a"},
-      {id:"padel_aly",label:"Падл груповий (Alyona)",color:"#f4c53a"},
+      {id:"individual",label:"Індивідуальне тренування",color:"#9b8ef4"},
+      {id:"group_train",label:"Групове тренування",color:"#f4a23a"},
+      {id:"my_train",label:"Власне тренування",color:"#f46a6a"},
     ],
-    courtTypes:[
-      {id:"padel",label:"Падл",color:"#4af0b0"},
-      {id:"squash",label:"Сквош",color:"#4a9ef4"},
-    ],
+    courtTypes:[],
     statuses:[
       {id:"lead",label:"Потенційний",color:"#6b7394"},
       {id:"new",label:"Новий",color:"#c8f135"},

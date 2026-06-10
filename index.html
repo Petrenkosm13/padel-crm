@@ -213,7 +213,7 @@ function App(){
   const [showSettings,setShowSettings]=useState(false);
   useEffect(()=>{window._showSettings=()=>setShowSettings(true);},[]);
   const [showSignOut,setShowSignOut]=useState(false);
-  const updSettings=(v)=>{setSettings(v);lsSet("padel_settings",v);};
+  const updSettings=(v)=>{setSettings(v);lsSet("padel_settings",v);if(user){clearTimeout(saveTimer.current);saveTimer.current=setTimeout(async()=>{try{await window._fb.save(user.uid,{contacts,groups,courts,trainings,notes,settings:v});}catch(e){console.error(e);}},800);}};
   const [contacts,setContacts]=useState(()=>lsGet("padel_contacts")||[]);
   const [groups,setGroups]=useState(()=>lsGet("padel_groups")||[]);
   const [courts,setCourts]=useState(()=>lsGet("padel_courts")||[]);

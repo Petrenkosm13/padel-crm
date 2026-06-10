@@ -57,7 +57,7 @@ const {useState,useEffect,useRef,useCallback}=React;
 const CHANNELS=[{id:"facebook",label:"Facebook",emoji:"📘",color:"#1877F2"},{id:"threads",label:"Threads",emoji:"🧵",color:"#aaa"},{id:"instagram",label:"Instagram",emoji:"📸",color:"#E1306C"},{id:"whatsapp",label:"WhatsApp",emoji:"💬",color:"#25D366"},{id:"telegram",label:"Telegram",emoji:"✈️",color:"#229ED9"},{id:"personal",label:"Особисто",emoji:"🤝",color:"#c8f135"}];
 const STATUSES=[{id:"lead",label:"Потенційний",color:"#6b7394",bg:"rgba(107,115,148,.15)"},{id:"new",label:"Новий",color:"#c8f135",bg:"rgba(200,241,53,.12)"},{id:"once",label:"Був 1 раз",color:"#ffb830",bg:"rgba(255,184,48,.12)"},{id:"regular",label:"Регулярний",color:"#4af0b0",bg:"rgba(74,240,176,.12)"},{id:"group",label:"Хоче в групу",color:"#b07fff",bg:"rgba(176,127,255,.12)"},{id:"inactive",label:"Неактивний",color:"#ff4f6a",bg:"rgba(255,79,106,.12)"}];
 const LEVELS=["Початківець","Нижче середнього","Середній","Вище середнього","Просунутий"];
-const TABS=[{id:"calendar",label:"Календар",icon:"📅"},{id:"contacts",label:"Контакти",icon:"👥"},{id:"analytics",label:"Аналітика",icon:"📊"},{id:"notes",label:"Замітки",icon:"📝"},{id:"reminders",label:"Нагадув.",icon:"🔔"},{id:"dashboard",label:"Сьогодні",icon:"⚡"},{id:"groups",label:"Групи",icon:"🎾"}];
+const TABS=[{id:"dashboard",label:"Сьогодні",icon:"⚡"},{id:"calendar",label:"Календар",icon:"📅"},{id:"contacts",label:"Контакти",icon:"👥"},{id:"analytics",label:"Аналітика",icon:"📊"},{id:"notes",label:"Замітки",icon:"📝"},{id:"reminders",label:"Нагадув.",icon:"🔔"},{id:"groups",label:"Групи",icon:"🎾"}];
 const NOTE_TYPES=[{id:"note",label:"Замітка",emoji:"📝",color:"#9097b5"},{id:"todo",label:"Написати комусь",emoji:"✉️",color:"#4a9ef4"},{id:"event",label:"Подія",emoji:"📅",color:"#b07fff"},{id:"task",label:"Завдання",emoji:"✅",color:"#4af0b0"}];
 const CHAT_PLATFORMS=[
   {id:"telegram",  label:"Telegram",  emoji:"✈️", base:"https://t.me/",          prefix:"https://t.me/",          placeholder:"username (без @)"},
@@ -182,7 +182,7 @@ function App(){
   const [user,setUser]=useState(null);
   const [authLoading,setAuthLoading]=useState(true);
   const saveTimer=useRef(null);
-  const [tab,setTab]=useState("calendar");
+  const [tab,setTab]=useState("dashboard");
   const [dark,setDark]=useState(()=>lsGet("padel_theme")!=="light");
   const [settings,setSettings]=useState(()=>{const saved=lsGet("padel_settings");if(saved&&saved.trainTypes&&saved.trainTypes.length>0)return saved;return {
     trainTypes:[

@@ -318,7 +318,7 @@ function App(){
       {modal==="contact"&&<ContactModal item={editItem} contacts={contacts} settings={settings} onClose={closeModal} onSave={v=>{updC(v);closeModal();showToast("Збережено ✓");}}/>}
       {modal==="group"&&<GroupModal item={editItem} groups={groups} contacts={contacts} onClose={closeModal} onSave={v=>{updG(v);closeModal();showToast("Збережено ✓");}}/>}
       {modal==="note"&&<NoteModal item={editItem||{_new:true}} contacts={contacts} notes={notes} onClose={closeModal} onSave={v=>{updN(v);closeModal();showToast("Збережено ✓");}}/>}
-      {modal==="detail"&&<ContactDetail id={detailId} contacts={contacts} onClose={closeModal} onEdit={()=>{closeModal();const c=contacts.find(x=>x.id===detailId);openContact(c);}} onUpdate={updC} showToast={showToast}/>}
+      {modal==="detail"&&<ContactDetail id={detailId} contacts={contacts} settings={settings} onClose={closeModal} onEdit={()=>{closeModal();const c=contacts.find(x=>x.id===detailId);openContact(c);}} onUpdate={updC} showToast={showToast}/>}
       {toast&&<div style={{position:"fixed",bottom:20,left:"50%",transform:"translateX(-50%)",background:"var(--accent)",color:"var(--bg)",padding:"8px 18px",borderRadius:20,fontSize:13,fontWeight:600,zIndex:999,pointerEvents:"none",whiteSpace:"nowrap"}}>{toast}</div>}
       {showSettings&&<SettingsModal settings={settings} onClose={()=>setShowSettings(false)} onSave={(v)=>{updSettings(v);setShowSettings(false);showToast("Налаштування збережено ✓");}}/>}
     </div>
@@ -664,41 +664,236 @@ function Contacts({contacts,onUpdate,onOpen,onDetail,settings,showToast}){
   );
 }
 
-function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast}){
+function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast,settings}){
+  const [activeTab,setActiveTab]=useState("main");
+  const [addingTab,setAddingTab]=useState(false);
+  const [newTabName,setNewTabName]=useState("");
+  const [newTabType,setNewTabType]=useState("fields");
   const [newNote,setNewNote]=useState("");
+  const [newEntry,setNewEntry]=useState("");
+  const [newEntryKey,setNewEntryKey]=useState("");
+
   const c=contacts.find(x=>x.id===id);
   if(!c)return null;
-  const addNote=()=>{if(!newNote.trim())return;const h=c.history||[];onUpdate(contacts.map(x=>x.id===id?{...x,history:[...h,{id:uid(),date:TODAY,text:newNote.trim(),channel:c.channels?.[0]||""}]}:x));setNewNote("");showToast("Нотатку додано ✓");};
+
+  const templateTabs=settings?.contactTabTemplates||[
+    {id:"main",label:"Основна",type:"main",removable:false},
+    {id:"history",label:"Історія",type:"history",removable:false},
+  ];
+  const contactTabs=c.customTabs||[];
+  const allTabs=[...templateTabs,...contactTabs];
+
+  const addContactTab=()=>{
+    if(!newTabName.trim())return;
+    const tab={id:uid(),label:newTabName.trim(),type:newTabType,removable:true,data:[]};
+    onUpdate(contacts.map(x=>x.id===id?{...x,customTabs:[...(x.customTabs||[]),tab]}:x));
+    setNewTabName("");setAddingTab(false);setActiveTab(tab.id);
+  };
+  const removeContactTab=(tabId)=>{
+    onUpdate(contacts.map(x=>x.id===id?{...x,customTabs:(x.customTabs||[]).filter(t=>t.id!==tabId)}:x));
+    setActiveTab("main");
+  };
+  const addNote=()=>{
+    if(!newNote.trim())return;
+    const h=c.history||[];
+    onUpdate(contacts.map(x=>x.id===id?{...x,history:[...h,{id:uid(),date:TODAY,text:newNote.trim(),channel:c.channels?.[0]||""}]}:x));
+    setNewNote("");showToast("Додано");
+  };
   const delNote=(hid)=>onUpdate(contacts.map(x=>x.id===id?{...x,history:(x.history||[]).filter(h=>h.id!==hid)}:x));
+  const addTabEntry=(tabId,entry)=>onUpdate(contacts.map(x=>x.id===id?{...x,customTabs:(x.customTabs||[]).map(t=>t.id===tabId?{...t,data:[...(t.data||[]),entry]}:t)}:x));
+  const delTabEntry=(tabId,entryId)=>onUpdate(contacts.map(x=>x.id===id?{...x,customTabs:(x.customTabs||[]).map(t=>t.id===tabId?{...t,data:(t.data||[]).filter(e=>e.id!==entryId)}:t)}:x));
+  const toggleTabEntry=(tabId,entryId)=>onUpdate(contacts.map(x=>x.id===id?{...x,customTabs:(x.customTabs||[]).map(t=>t.id===tabId?{...t,data:(t.data||[]).map(e=>e.id===entryId?{...e,done:!e.done}:e)}:t)}:x));
+
+  const currentTab=allTabs.find(t=>t.id===activeTab)||allTabs[0];
+
   return(
     <div style={overlay} onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div style={modal}>
-        <div style={modalTitle}><span>{c.name}</span><div style={{display:"flex",gap:8}}><button style={btnG} onClick={onEdit}>✏️</button><button style={{background:"none",border:"none",color:"var(--muted)",fontSize:20,cursor:"pointer"}} onClick={onClose}>✕</button></div></div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}><StatusPill status={c.status}/>{c.channels?.map(ch=><ChannelChip key={ch} channel={ch}/>)}</div>
-        {c.level&&<div style={{color:"var(--text2)",fontSize:13,marginBottom:4}}>🎾 {c.level}</div>}
-        {c.contact&&<div style={{color:"var(--accent2)",fontSize:13,marginBottom:4}}>📱 {c.contact}</div>}
+        <div style={modalTitle}>
+          <span>{c.name}</span>
+          <div style={{display:"flex",gap:8}}>
+            <button style={btnG} onClick={onEdit}>&#9999;</button>
+            <button style={{background:"none",border:"none",color:"var(--muted)",fontSize:20,cursor:"pointer"}} onClick={onClose}>&#x2715;</button>
+          </div>
+        </div>
+
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
+          <StatusPill status={c.status}/>
+          {c.channels?.map(ch=><ChannelChip key={ch} channel={ch}/>)}
+        </div>
+        {c.level&&<div style={{color:"var(--text2)",fontSize:13,marginBottom:4}}>{c.level}</div>}
+        {c.contact&&<div style={{color:"var(--accent2)",fontSize:13,marginBottom:4}}>&#128241; {c.contact}</div>}
         {c.chatLink&&(()=>{
-  const pl=CHAT_PLATFORMS.find(p=>c.chatLink.startsWith(p.base));
-  return(
-    <a href={c.chatLink} target="_blank" rel="noreferrer"
-      style={{display:"inline-flex",alignItems:"center",gap:6,color:"#4a9ef4",fontSize:13,
-        marginBottom:10,textDecoration:"none",padding:"4px 10px",
-        background:"rgba(74,158,244,.1)",borderRadius:8,border:"1px solid rgba(74,158,244,.25)"}}>
-      {pl?pl.emoji+" "+pl.label+" — перейти в чат":"Перейти в чат"}
-    </a>
-  );
-})()}
-        {c.note&&<div style={{marginBottom:14}}><div style={{fontSize:11,fontWeight:600,color:"var(--muted)",textTransform:"uppercase",letterSpacing:.6,marginBottom:6}}>Нотатка</div><div style={{background:"var(--surface2)",borderRadius:8,padding:10,color:"var(--text2)",fontSize:13,lineHeight:1.55}}>{c.note}</div></div>}
-        {c.remindDate&&!c.remindDone&&<div style={{background:"rgba(255,184,48,.08)",border:"1px solid rgba(255,184,48,.2)",borderRadius:8,padding:10,marginBottom:14}}><span style={{color:"var(--warn)",fontSize:13,fontWeight:600}}>🔔 Написати: {formatDate(c.remindDate)}</span></div>}
-        <div style={{height:1,background:"var(--border)",margin:"14px 0"}}/>
-        <div style={{fontSize:11,fontWeight:600,color:"var(--muted)",textTransform:"uppercase",letterSpacing:.6,marginBottom:10}}>Історія спілкування</div>
-        {(!c.history||!c.history.length)&&<div style={{color:"var(--muted)",fontSize:12,marginBottom:10}}>Поки нічого немає</div>}
-        {(c.history||[]).map(h=>(<div key={h.id} style={{padding:"8px 10px",borderRadius:8,background:"var(--surface2)",border:"1px solid var(--border)",marginBottom:6}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,color:"var(--muted)",marginBottom:3}}><span style={{display:"flex",gap:6,alignItems:"center"}}>{formatDate(h.date)} {h.channel&&<ChannelChip channel={h.channel}/>}</span><button style={iconBtn} onClick={()=>delNote(h.id)}>🗑</button></div><div style={{fontSize:13,color:"var(--text2)"}}>{h.text}</div></div>))}
-        <div style={{display:"flex",gap:6,marginTop:8}}><textarea style={{...inp,minHeight:48,flex:1}} placeholder="Додати запис про спілкування..." value={newNote} onChange={e=>setNewNote(e.target.value)}/><button style={{...btnP,alignSelf:"flex-end"}} onClick={addNote}>+</button></div>
+          const pl=CHAT_PLATFORMS.find(p=>c.chatLink.startsWith(p.base));
+          return(<a href={c.chatLink} target="_blank" rel="noreferrer"
+            style={{display:"inline-flex",alignItems:"center",gap:6,color:"#4a9ef4",fontSize:13,
+              marginBottom:8,textDecoration:"none",padding:"4px 10px",
+              background:"rgba(74,158,244,.1)",borderRadius:8,border:"1px solid rgba(74,158,244,.25)"}}>
+            {pl?pl.label+" →":"Перейти в чат"}
+          </a>);
+        })()}
+
+        {/* Tab navigation */}
+        <div style={{display:"flex",gap:4,overflowX:"auto",marginBottom:12,marginTop:8,
+          borderBottom:"1px solid var(--border)",paddingBottom:8}}>
+          {allTabs.map(tab=>(
+            <button key={tab.id} onClick={()=>setActiveTab(tab.id)}
+              style={{padding:"4px 12px",borderRadius:20,
+                border:`1px solid ${activeTab===tab.id?"var(--accent)":"var(--border2)"}`,
+                background:activeTab===tab.id?"rgba(200,241,53,.1)":"var(--surface2)",
+                color:activeTab===tab.id?"var(--accent)":"var(--muted)",
+                fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,
+                cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
+              {tab.label}
+              {tab.removable&&<span onClick={e=>{e.stopPropagation();removeContactTab(tab.id);}}
+                style={{fontSize:10,opacity:.6}}>&#x2715;</span>}
+            </button>
+          ))}
+          {!addingTab&&(
+            <button onClick={()=>setAddingTab(true)}
+              style={{padding:"4px 10px",borderRadius:20,border:"1px dashed var(--border2)",
+                background:"transparent",color:"var(--muted)",fontFamily:"'DM Sans',sans-serif",
+                fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
+              + Вкладка
+            </button>
+          )}
+        </div>
+
+        {/* Add tab form */}
+        {addingTab&&(
+          <div style={{...card,marginBottom:12}}>
+            <div style={{display:"flex",gap:6,marginBottom:6}}>
+              <input style={{...inp,flex:1}} placeholder="Назва вкладки..."
+                value={newTabName} onChange={e=>setNewTabName(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&addContactTab()}/>
+              <select style={{...inp,width:130}} value={newTabType} onChange={e=>setNewTabType(e.target.value)}>
+                <option value="fields">Поля</option>
+                <option value="records">Записи</option>
+                <option value="checklist">Список</option>
+                <option value="text">Текст</option>
+              </select>
+            </div>
+            <div style={{display:"flex",gap:6}}>
+              <button style={{...btnP,flex:1}} onClick={addContactTab}>Додати</button>
+              <button style={btnG} onClick={()=>setAddingTab(false)}>Скасувати</button>
+            </div>
+          </div>
+        )}
+
+        {/* Main tab */}
+        {currentTab?.type==="main"&&(
+          <div>
+            {c.note&&<div style={{marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:600,color:"var(--muted)",textTransform:"uppercase",letterSpacing:.6,marginBottom:6}}>Нотатка</div>
+              <div style={{background:"var(--surface2)",borderRadius:8,padding:10,color:"var(--text2)",fontSize:13,lineHeight:1.55}}>{c.note}</div>
+            </div>}
+            {c.remindDate&&!c.remindDone&&(
+              <div style={{background:"rgba(255,184,48,.08)",border:"1px solid rgba(255,184,48,.2)",borderRadius:8,padding:10}}>
+                <span style={{color:"var(--warn)",fontSize:13,fontWeight:600}}>&#128276; Написати: {formatDate(c.remindDate)}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* History tab */}
+        {currentTab?.type==="history"&&(
+          <div>
+            {(!c.history||!c.history.length)&&<div style={{color:"var(--muted)",fontSize:12,marginBottom:10}}>Поки нічого немає</div>}
+            {(c.history||[]).map(h=>(
+              <div key={h.id} style={{padding:"8px 10px",borderRadius:8,background:"var(--surface2)",border:"1px solid var(--border)",marginBottom:6}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"var(--muted)",marginBottom:3}}>
+                  <span>{formatDate(h.date)}</span>
+                  <DeleteBtn onDelete={()=>delNote(h.id)} label=""/>
+                </div>
+                <div style={{fontSize:13,color:"var(--text2)"}}>{h.text}</div>
+              </div>
+            ))}
+            <div style={{display:"flex",gap:6,marginTop:8}}>
+              <textarea style={{...inp,minHeight:48,flex:1}} placeholder="Додати запис..."
+                value={newNote} onChange={e=>setNewNote(e.target.value)}/>
+              <button style={{...btnP,alignSelf:"flex-end"}} onClick={addNote}>+</button>
+            </div>
+          </div>
+        )}
+
+        {/* Custom tabs */}
+        {currentTab?.removable&&(()=>{
+          const tabData=contactTabs.find(t=>t.id===currentTab.id);
+          if(!tabData)return null;
+          const entries=tabData.data||[];
+
+          if(tabData.type==="fields")return(
+            <div>
+              {entries.map(e=>(
+                <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid var(--border)"}}>
+                  <span style={{fontSize:12,color:"var(--muted)",width:120,flexShrink:0}}>{e.key}</span>
+                  <span style={{fontSize:13,flex:1}}>{e.value}</span>
+                  <DeleteBtn onDelete={()=>delTabEntry(currentTab.id,e.id)} label=""/>
+                </div>
+              ))}
+              <div style={{display:"flex",gap:6,marginTop:8}}>
+                <input style={{...inp,width:100}} placeholder="Назва" value={newEntryKey} onChange={e=>setNewEntryKey(e.target.value)}/>
+                <input style={{...inp,flex:1}} placeholder="Значення" value={newEntry} onChange={e=>setNewEntry(e.target.value)}
+                  onKeyDown={e=>{if(e.key==="Enter"&&newEntryKey.trim()&&newEntry.trim()){addTabEntry(currentTab.id,{id:uid(),key:newEntryKey.trim(),value:newEntry.trim()});setNewEntry("");setNewEntryKey("");}}}/>
+                <button style={btnP} onClick={()=>{if(newEntryKey.trim()&&newEntry.trim()){addTabEntry(currentTab.id,{id:uid(),key:newEntryKey.trim(),value:newEntry.trim()});setNewEntry("");setNewEntryKey("");}}}>+</button>
+              </div>
+            </div>
+          );
+
+          if(tabData.type==="records")return(
+            <div>
+              {entries.map(e=>(
+                <div key={e.id} style={{padding:"8px 10px",borderRadius:8,background:"var(--surface2)",border:"1px solid var(--border)",marginBottom:6}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"var(--muted)",marginBottom:3}}>
+                    <span>{formatDate(e.date)}</span>
+                    <DeleteBtn onDelete={()=>delTabEntry(currentTab.id,e.id)} label=""/>
+                  </div>
+                  <div style={{fontSize:13}}>{e.text}</div>
+                </div>
+              ))}
+              <div style={{display:"flex",gap:6,marginTop:8}}>
+                <textarea style={{...inp,minHeight:48,flex:1}} placeholder="Новий запис..."
+                  value={newEntry} onChange={e=>setNewEntry(e.target.value)}/>
+                <button style={{...btnP,alignSelf:"flex-end"}} onClick={()=>{if(newEntry.trim()){addTabEntry(currentTab.id,{id:uid(),date:TODAY,text:newEntry.trim()});setNewEntry("");}}}>+</button>
+              </div>
+            </div>
+          );
+
+          if(tabData.type==="checklist")return(
+            <div>
+              {entries.map(e=>(
+                <div key={e.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:"1px solid var(--border)"}}>
+                  <button onClick={()=>toggleTabEntry(currentTab.id,e.id)}
+                    style={{width:20,height:20,borderRadius:4,border:`2px solid ${e.done?"var(--accent2)":"var(--border2)"}`,
+                      background:e.done?"rgba(74,240,176,.15)":"var(--surface2)",cursor:"pointer",
+                      display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:11,color:"var(--accent2)"}}>
+                    {e.done&&"&#10003;"}
+                  </button>
+                  <span style={{flex:1,fontSize:13,textDecoration:e.done?"line-through":"none",color:e.done?"var(--muted)":"var(--text)"}}>{e.text}</span>
+                  <DeleteBtn onDelete={()=>delTabEntry(currentTab.id,e.id)} label=""/>
+                </div>
+              ))}
+              <div style={{display:"flex",gap:6,marginTop:8}}>
+                <input style={{...inp,flex:1}} placeholder="Новий пункт..." value={newEntry}
+                  onChange={e=>setNewEntry(e.target.value)}
+                  onKeyDown={e=>{if(e.key==="Enter"&&newEntry.trim()){addTabEntry(currentTab.id,{id:uid(),text:newEntry.trim(),done:false});setNewEntry("");}}}/>
+                <button style={btnP} onClick={()=>{if(newEntry.trim()){addTabEntry(currentTab.id,{id:uid(),text:newEntry.trim(),done:false});setNewEntry("");}}}>+</button>
+              </div>
+            </div>
+          );
+
+          if(tabData.type==="text")return(
+            <textarea style={{...inp,minHeight:150}} placeholder="Вільний текст..."
+              value={entries[0]?.text||""}
+              onChange={e=>{const text=e.target.value;onUpdate(contacts.map(x=>x.id===id?{...x,customTabs:(x.customTabs||[]).map(t=>t.id===currentTab.id?{...t,data:[{id:"text",text}]}:t)}:x));}}/>
+          );
+          return null;
+        })()}
       </div>
     </div>
   );
 }
+
 
 function ContactModal({item,contacts,settings,onClose,onSave}){
   const [form,setForm]=useState(item||{id:uid(),name:"",channels:[],status:"new",level:"",note:"",contact:"",remindDate:"",remindDone:false,history:[]});

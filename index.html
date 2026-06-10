@@ -1302,11 +1302,16 @@ function SettingsModal({settings,onClose,onSave}){
   const updChannel=(id,k,v)=>setF("channels",form.channels.map(c=>c.id===id?{...c,[k]:v}:c));
 
   const ST=({children})=>(<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:16,fontWeight:700,letterSpacing:1.5,color:"var(--accent)",margin:"18px 0 10px",borderBottom:"1px solid var(--border)",paddingBottom:6}}>{children}</div>);
-  const CR=({item,onLabel,onColor,onDel})=>(
+  // CR is inlined to avoid re-mount focus loss - use renderItem helper instead
+  const renderItem=(item,onLabel,onColor,onDel,onUp,onDown,showOrder)=>(
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
       <input type="color" value={item.color} onChange={e=>onColor(e.target.value)} style={{width:32,height:32,borderRadius:6,border:"1px solid var(--border2)",cursor:"pointer",padding:2,background:"var(--surface2)",flexShrink:0}}/>
       <div style={{width:8,height:8,borderRadius:"50%",background:item.color,flexShrink:0}}/>
       <input style={{...inp,flex:1}} value={item.label} onChange={e=>onLabel(e.target.value)}/>
+      {showOrder&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
+        {onUp&&<button style={{...iconBtn,padding:"1px 6px",fontSize:10,lineHeight:1}} onClick={onUp}>&#9650;</button>}
+        {onDown&&<button style={{...iconBtn,padding:"1px 6px",fontSize:10,lineHeight:1}} onClick={onDown}>&#9660;</button>}
+      </div>}
       <DeleteBtn onDelete={onDel} label="" style={{padding:"5px 8px",flexShrink:0}}/>
     </div>
   );
@@ -1316,19 +1321,35 @@ function SettingsModal({settings,onClose,onSave}){
       <div style={{...modal,borderRadius:16,margin:"20px auto",maxHeight:"calc(100vh - 40px)"}}>
         <div style={modalTitle}><span>Налаштування</span><button style={{background:"none",border:"none",color:"var(--muted)",fontSize:20,cursor:"pointer"}} onClick={onClose}>x</button></div>
         <ST>Типи тренувань</ST>
-        {form.trainTypes.map(t=><CR key={t.id} item={t} onLabel={v=>updTrainType(t.id,"label",v)} onColor={v=>updTrainType(t.id,"color",v)} onDel={()=>delTrainType(t.id)}/>)}
+        {form.trainTypes.map((t,i)=>
+          <div key={t.id}>{renderItem(t,v=>updTrainType(t.id,"label",v),v=>updTrainType(t.id,"color",v),()=>delTrainType(t.id),
+            i>0?()=>{const a=[...form.trainTypes];[a[i-1],a[i]]=[a[i],a[i-1]];setF("trainTypes",a);}:null,
+            i<form.trainTypes.length-1?()=>{const a=[...form.trainTypes];[a[i],a[i+1]]=[a[i+1],a[i]];setF("trainTypes",a);}:null,
+            true)}</div>)}
         <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addTrainType}>+ Додати тип</button>
         <ST>Типи кортів</ST>
-        {form.courtTypes.map(c=><CR key={c.id} item={c} onLabel={v=>updCourtType(c.id,"label",v)} onColor={v=>updCourtType(c.id,"color",v)} onDel={()=>delCourtType(c.id)}/>)}
+        {form.courtTypes.map((c,i)=>
+          <div key={c.id}>{renderItem(c,v=>updCourtType(c.id,"label",v),v=>updCourtType(c.id,"color",v),()=>delCourtType(c.id),
+            i>0?()=>{const a=[...form.courtTypes];[a[i-1],a[i]]=[a[i],a[i-1]];setF("courtTypes",a);}:null,
+            i<form.courtTypes.length-1?()=>{const a=[...form.courtTypes];[a[i],a[i+1]]=[a[i+1],a[i]];setF("courtTypes",a);}:null,
+            true)}</div>)}
         <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addCourtType}>+ Додати тип</button>
         <ST>Статуси контактів</ST>
-        {form.statuses.map(s=><CR key={s.id} item={s} onLabel={v=>updStatus(s.id,"label",v)} onColor={v=>updStatus(s.id,"color",v)} onDel={()=>delStatus(s.id)}/>)}
+        {form.statuses.map((s,i)=>
+          <div key={s.id}>{renderItem(s,v=>updStatus(s.id,"label",v),v=>updStatus(s.id,"color",v),()=>delStatus(s.id),
+            i>0?()=>{const a=[...form.statuses];[a[i-1],a[i]]=[a[i],a[i-1]];setF("statuses",a);}:null,
+            i<form.statuses.length-1?()=>{const a=[...form.statuses];[a[i],a[i+1]]=[a[i+1],a[i]];setF("statuses",a);}:null,
+            true)}</div>)}
         <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addStatus}>+ Додати статус</button>
         <ST>Рівні гравців</ST>
         {form.levels.map((l,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}><input style={{...inp,flex:1}} value={l} onChange={e=>updLevel(i,e.target.value)}/><DeleteBtn onDelete={()=>delLevel(l)} label="" style={{padding:"5px 8px",flexShrink:0}}/></div>))}
         <div style={{display:"flex",gap:6,marginBottom:4}}><input style={{...inp,flex:1}} placeholder="Новий рівень..." value={newLevel} onChange={e=>setNewLevel(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addLevel()}/><button style={{...btnG,fontSize:12,flexShrink:0}} onClick={addLevel}>+ Додати</button></div>
         <ST>Канали спілкування</ST>
-        {form.channels.map(c=><CR key={c.id} item={c} onLabel={v=>updChannel(c.id,"label",v)} onColor={v=>updChannel(c.id,"color",v)} onDel={()=>delChannel(c.id)}/>)}
+        {form.channels.map((c,i)=>
+          <div key={c.id}>{renderItem(c,v=>updChannel(c.id,"label",v),v=>updChannel(c.id,"color",v),()=>delChannel(c.id),
+            i>0?()=>{const a=[...form.channels];[a[i-1],a[i]]=[a[i],a[i-1]];setF("channels",a);}:null,
+            i<form.channels.length-1?()=>{const a=[...form.channels];[a[i],a[i+1]]=[a[i+1],a[i]];setF("channels",a);}:null,
+            true)}</div>)}
         <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addChannel}>+ Додати канал</button>
         <div style={{height:1,background:"var(--border)",margin:"16px 0"}}/>
         <div style={{display:"flex",gap:8}}><button style={{...btnP,flex:1}} onClick={()=>onSave(form)}>Зберегти</button><button style={btnG} onClick={onClose}>Скасувати</button></div>

@@ -1434,7 +1434,16 @@ function Analytics({trainings,contacts,settings}){
    SETTINGS MODAL
 ══════════════════════════════════════════════════════ */
 function SettingsModal({settings,onClose,onSave}){
-  const [form,setForm]=useState(JSON.parse(JSON.stringify(settings)));
+  const DEFAULT_DASH=[
+    {id:"today_trainings",label:"Тренування сьогодні",enabled:true,order:0},
+    {id:"reminders",label:"Нагадування",enabled:true,order:1},
+    {id:"quick_note",label:"Швидка замітка",enabled:true,order:2},
+    {id:"week_stats",label:"Статистика тижня",enabled:false,order:3},
+    {id:"client_activity",label:"Активність клієнтів",enabled:false,order:4},
+    {id:"groups_block",label:"Групи",enabled:false,order:5},
+  ];
+  const merged={...settings,dashBlocks:settings.dashBlocks&&settings.dashBlocks.length>0?settings.dashBlocks:DEFAULT_DASH};
+  const [form,setForm]=useState(JSON.parse(JSON.stringify(merged)));
   const setF=(k,v)=>setForm(f=>({...f,[k]:v}));
   const addTrainType=()=>setF("trainTypes",[...form.trainTypes,{id:uid(),label:"Новий тип",color:"#9097b5"}]);
   const delTrainType=(id)=>setF("trainTypes",form.trainTypes.filter(t=>t.id!==id));

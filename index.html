@@ -57,7 +57,7 @@ const {useState,useEffect,useRef,useCallback}=React;
 const CHANNELS=[{id:"facebook",label:"Facebook",emoji:"📘",color:"#1877F2"},{id:"threads",label:"Threads",emoji:"🧵",color:"#aaa"},{id:"instagram",label:"Instagram",emoji:"📸",color:"#E1306C"},{id:"whatsapp",label:"WhatsApp",emoji:"💬",color:"#25D366"},{id:"telegram",label:"Telegram",emoji:"✈️",color:"#229ED9"},{id:"personal",label:"Особисто",emoji:"🤝",color:"#c8f135"}];
 const STATUSES=[{id:"lead",label:"Потенційний",color:"#6b7394",bg:"rgba(107,115,148,.15)"},{id:"new",label:"Новий",color:"#c8f135",bg:"rgba(200,241,53,.12)"},{id:"once",label:"Був 1 раз",color:"#ffb830",bg:"rgba(255,184,48,.12)"},{id:"regular",label:"Регулярний",color:"#4af0b0",bg:"rgba(74,240,176,.12)"},{id:"group",label:"Хоче в групу",color:"#b07fff",bg:"rgba(176,127,255,.12)"},{id:"inactive",label:"Неактивний",color:"#ff4f6a",bg:"rgba(255,79,106,.12)"}];
 const LEVELS=["Початківець","Нижче середнього","Середній","Вище середнього","Просунутий"];
-const TABS=[{id:"dashboard",label:"Дашборд",icon:"⚡"},{id:"calendar",label:"Календар",icon:"📅"},{id:"contacts",label:"Контакти",icon:"👥"},{id:"reminders",label:"Нагадув.",icon:"🔔"},{id:"notes",label:"Замітки",icon:"📝"},{id:"groups",label:"Групи",icon:"🎾"},{id:"posts",label:"Пости",icon:"📣"}];
+const TABS=[{id:"dashboard",label:"Дашборд",icon:"⚡"},{id:"calendar",label:"Календар",icon:"📅"},{id:"contacts",label:"Контакти",icon:"👥"},{id:"reminders",label:"Нагадув.",icon:"🔔"},{id:"notes",label:"Замітки",icon:"📝"},{id:"groups",label:"Групи",icon:"🎾"},];
 const NOTE_TYPES=[{id:"note",label:"Замітка",emoji:"📝",color:"#9097b5"},{id:"todo",label:"Написати комусь",emoji:"✉️",color:"#4a9ef4"},{id:"event",label:"Подія",emoji:"📅",color:"#b07fff"},{id:"task",label:"Завдання",emoji:"✅",color:"#4af0b0"}];
 const CHAT_PLATFORMS=[
   {id:"telegram",  label:"Telegram",  emoji:"✈️", base:"https://t.me/",          prefix:"https://t.me/",          placeholder:"username (без @)"},
@@ -218,7 +218,6 @@ function App(){
   const updSettings=(v)=>{setSettings(v);lsSet("padel_settings",v);};
   const [contacts,setContacts]=useState(()=>lsGet("padel_contacts")||[]);
   const [groups,setGroups]=useState(()=>lsGet("padel_groups")||[]);
-  const [posts,setPosts]=useState(()=>lsGet("padel_posts")||[]);
   const [courts,setCourts]=useState(()=>lsGet("padel_courts")||[]);
   const [trainings,setTrainings]=useState(()=>lsGet("padel_trainings")||[]);
   const [notes,setNotes]=useState(()=>lsGet("padel_notes")||[]);
@@ -236,21 +235,19 @@ function App(){
     const unsub=window._fb.listen(user.uid,(data)=>{
       if(data.contacts){setContacts(data.contacts);lsSet("padel_contacts",data.contacts);}
       if(data.groups){setGroups(data.groups);lsSet("padel_groups",data.groups);}
-      if(data.posts){setPosts(data.posts);lsSet("padel_posts",data.posts);}
       if(data.courts){setCourts(data.courts);lsSet("padel_courts",data.courts);}
       if(data.trainings){setTrainings(data.trainings);lsSet("padel_trainings",data.trainings);}
       if(data.notes){setNotes(data.notes);lsSet("padel_notes",data.notes);}
     });
     return unsub;
   },[user]);
-  const cloudSave=useCallback((c,g,p,co,tr,n)=>{if(!user)return;clearTimeout(saveTimer.current);saveTimer.current=setTimeout(async()=>{try{await window._fb.save(user.uid,{contacts:c,groups:g,posts:p,courts:co,trainings:tr,notes:n});}catch(e){console.error(e);}},800);},[user]);
+  const cloudSave=useCallback((c,g,_p,co,tr,n)=>{if(!user)return;clearTimeout(saveTimer.current);saveTimer.current=setTimeout(async()=>{try{await window._fb.save(user.uid,{contacts:c,groups:g,courts:co,trainings:tr,notes:n});}catch(e){console.error(e);}},800);},[user]);
 
-  const updC=(v)=>{setContacts(v);lsSet("padel_contacts",v);cloudSave(v,groups,posts,courts,trainings,notes);};
-  const updG=(v)=>{setGroups(v);lsSet("padel_groups",v);cloudSave(contacts,v,posts,courts,trainings,notes);};
-  const updP=(v)=>{setPosts(v);lsSet("padel_posts",v);cloudSave(contacts,groups,v,courts,trainings,notes);};
-  const updCo=(v)=>{setCourts(v);lsSet("padel_courts",v);cloudSave(contacts,groups,posts,v,trainings,notes);};
-  const updTr=(v)=>{setTrainings(v);lsSet("padel_trainings",v);cloudSave(contacts,groups,posts,courts,v,notes);};
-  const updN=(v)=>{setNotes(v);lsSet("padel_notes",v);cloudSave(contacts,groups,posts,courts,trainings,v);};
+  const updC=(v)=>{setContacts(v);lsSet("padel_contacts",v);cloudSave(v,groups,[],courts,trainings,notes);};
+  const updG=(v)=>{setGroups(v);lsSet("padel_groups",v);cloudSave(contacts,v,[],courts,trainings,notes);};
+  const updCo=(v)=>{setCourts(v);lsSet("padel_courts",v);cloudSave(contacts,groups,[],v,trainings,notes);};
+  const updTr=(v)=>{setTrainings(v);lsSet("padel_trainings",v);cloudSave(contacts,groups,[],courts,v,notes);};
+  const updN=(v)=>{setNotes(v);lsSet("padel_notes",v);cloudSave(contacts,groups,[],courts,trainings,v);};
 
   const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
   const remindDue=contacts.filter(c=>c.remindDate&&c.remindDate<=TODAY&&!c.remindDone).length+notes.filter(n=>n.remindDate&&n.remindDate<=TODAY&&!n.remindDone).length;
@@ -258,14 +255,12 @@ function App(){
 
   const openContact=(item)=>{setEditItem(item||null);setModal("contact");};
   const openGroup=(item)=>{setEditItem(item||null);setModal("group");};
-  const openPost=(item)=>{setEditItem(item||null);setModal("post");};
   const openDetail=(c)=>{setDetailId(c.id);setModal("detail");};
   const closeModal=()=>{setModal(null);setEditItem(null);setDetailId(null);};
   const fabAction=()=>{
     if(tab==="contacts")openContact(null);
     else if(tab==="notes"){setEditItem({_new:true});setModal("note");}
     else if(tab==="groups")openGroup(null);
-    else if(tab==="posts")openPost(null);
   };
 
   if(!fbReady||authLoading)return(<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",gap:16}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:32,fontWeight:700,letterSpacing:4,color:"var(--accent)"}}>PADEL<span style={{color:"var(--accent2)"}}>CRM</span></div><div style={{color:"var(--muted)",fontSize:13}}>Завантаження...</div></div>);
@@ -304,18 +299,16 @@ function App(){
         ))}
       </nav>
       <main style={{flex:1,padding:tab==="calendar"?0:14,maxWidth:tab==="calendar"?"100%":860,margin:"0 auto",width:"100%"}}>
-        {tab==="dashboard"&&<Dashboard contacts={contacts} groups={groups} onTabChange={setTab}/>}
+        {tab==="dashboard"&&<Dashboard contacts={contacts} groups={groups} trainings={trainings} onTabChange={setTab}/>}
         {tab==="calendar"&&<CalendarView courts={courts} trainings={trainings} onUpdateCourts={updCo} onUpdateTrainings={updTr} contacts={contacts} onOpenContact={openDetail} settings={settings} showToast={showToast}/>}
         {tab==="contacts"&&<Contacts contacts={contacts} onUpdate={updC} onOpen={openContact} onDetail={openDetail} settings={settings} showToast={showToast}/>}
-        {tab==="reminders"&&<Reminders contacts={contacts} onUpdate={updC} notes={notes} onUpdateNotes={updN} showToast={showToast} onDetail={openDetail}/>}
+        {tab==="reminders"&&<Reminders contacts={contacts} onUpdate={updC} notes={notes} onUpdateNotes={updN} showToast={showToast} onDetail={openDetail} onOpenNoteModal={()=>{setEditItem({_new:true});setModal("note");}}/>}
         {tab==="notes"&&<Notes notes={notes} contacts={contacts} onUpdate={updN} showToast={showToast}/>}
         {tab==="groups"&&<Groups groups={groups} contacts={contacts} onUpdate={updG} onOpen={openGroup} settings={settings} showToast={showToast}/>}
-        {tab==="posts"&&<Posts posts={posts} onUpdate={updP} onOpen={openPost} showToast={showToast}/>}
       </main>
       {tab!=="dashboard"&&tab!=="calendar"&&tab!=="reminders"&&<button onClick={fabAction} style={{position:"fixed",bottom:20,right:20,borderRadius:"50%",width:52,height:52,fontSize:26,display:"flex",alignItems:"center",justifyContent:"center",background:"var(--accent)",color:"var(--bg)",border:"none",cursor:"pointer",boxShadow:"0 4px 24px rgba(100,180,0,.35)",zIndex:90}}>+</button>}
       {modal==="contact"&&<ContactModal item={editItem} contacts={contacts} settings={settings} onClose={closeModal} onSave={v=>{updC(v);closeModal();showToast("Збережено ✓");}}/>}
       {modal==="group"&&<GroupModal item={editItem} groups={groups} contacts={contacts} onClose={closeModal} onSave={v=>{updG(v);closeModal();showToast("Збережено ✓");}}/>}
-      {modal==="post"&&<PostModal item={editItem} posts={posts} onClose={closeModal} onSave={v=>{updP(v);closeModal();showToast("Пост збережено ✓");}}/>}
       {modal==="note"&&<NoteModal item={editItem||{_new:true}} contacts={contacts} notes={notes} onClose={closeModal} onSave={v=>{updN(v);closeModal();showToast("Збережено ✓");}}/>}
       {modal==="detail"&&<ContactDetail id={detailId} contacts={contacts} onClose={closeModal} onEdit={()=>{closeModal();const c=contacts.find(x=>x.id===detailId);openContact(c);}} onUpdate={updC} showToast={showToast}/>}
       {toast&&<div style={{position:"fixed",bottom:20,left:"50%",transform:"translateX(-50%)",background:"var(--accent)",color:"var(--bg)",padding:"8px 18px",borderRadius:20,fontSize:13,fontWeight:600,zIndex:999,pointerEvents:"none",whiteSpace:"nowrap"}}>{toast}</div>}
@@ -324,7 +317,7 @@ function App(){
   );
 }
 
-function Dashboard({contacts,groups,onTabChange}){
+function Dashboard({contacts,groups,trainings,onTabChange}){
   const due=contacts.filter(c=>c.remindDate&&c.remindDate<=TODAY&&!c.remindDone);
   const wantGroup=contacts.filter(c=>c.status==="group");
   const totalSpots=groups.reduce((a,g)=>a+(g.max||4),0);
@@ -340,11 +333,141 @@ function Dashboard({contacts,groups,onTabChange}){
           <div key={i} style={card}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:32,fontWeight:700,color:s.color,lineHeight:1}}>{s.num}</div><div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{s.lbl}</div></div>
         ))}
       </div>
+      {/* ── TRAINING STATS BLOCK ── */}
+      <TrainingStats trainings={trainings}/>
+
       {due.length>0&&(<div style={{...card,borderColor:"rgba(255,79,106,.3)"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><span style={{fontWeight:600,color:"var(--danger)"}}>🔥 Написати сьогодні ({due.length})</span><button style={btnG} onClick={()=>onTabChange("reminders")}>Всі →</button></div>{due.slice(0,3).map(c=>(<div key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid var(--border)"}}><span style={{flex:1,fontWeight:500,fontSize:13}}>{c.name}</span>{c.channels?.[0]&&<ChannelChip channel={c.channels[0]}/>}<StatusPill status={c.status}/></div>))}{due.length>3&&<div style={{color:"var(--muted)",fontSize:12,marginTop:6}}>+{due.length-3} ще...</div>}</div>)}
       {groups.length>0&&(<div style={card}><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontWeight:600}}>🎾 Заповненість груп</span><span style={{color:"var(--accent)",fontWeight:700}}>{filledSpots}/{totalSpots}</span></div><ProgBar pct={fillPct}/><div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>{groups.map(g=>{const m=getMembers(g);const pct=g.max?Math.round(m.length/g.max*100):0;const col=pct>=100?"var(--danger)":pct>=75?"var(--warn)":"var(--accent2)";return(<div key={g.id}><div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}><span>{g.name}</span><span style={{color:col}}>{m.length}/{g.max}</span></div><ProgBar pct={pct} color={col} h={4}/></div>);})}</div></div>)}
       <div style={card}><div style={{fontWeight:600,marginBottom:10}}>👥 Статуси контактів</div>{stStats.filter(s=>s.count>0).map(s=>(<div key={s.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}><span style={{width:110,fontSize:12,color:s.color,fontWeight:600}}>{s.label}</span><div style={{flex:1,height:8,borderRadius:4,background:"var(--surface2)",overflow:"hidden"}}><div style={{height:"100%",borderRadius:4,background:s.color,width:contacts.length?(s.count/contacts.length*100)+"%":"0%",transition:"width .3s"}}/></div><span style={{fontSize:12,color:"var(--muted)",width:20,textAlign:"right"}}>{s.count}</span></div>))}</div>
       {chStats.length>0&&(<div style={card}><div style={{fontWeight:600,marginBottom:10}}>📱 Звідки клієнти</div><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{chStats.map(ch=>(<div key={ch.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",background:"var(--surface2)",borderRadius:8,border:`1px solid ${ch.color}30`}}><span>{ch.emoji}</span><span style={{fontWeight:600,fontSize:13}}>{ch.label}</span><span style={{color:ch.color,fontWeight:700,fontSize:15}}>{ch.count}</span></div>))}</div></div>)}
       {wantGroup.length>0&&(<div style={{...card,borderColor:"rgba(176,127,255,.25)"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontWeight:600,color:"#b07fff"}}>🎾 Хочуть в групу ({wantGroup.length})</span><button style={btnG} onClick={()=>onTabChange("groups")}>Групи →</button></div>{wantGroup.map(c=>(<div key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid var(--border)",fontSize:13}}><span style={{flex:1,fontWeight:500}}>{c.name}</span>{c.level&&<span style={{color:"var(--muted)",fontSize:11}}>{c.level}</span>}</div>))}</div>)}
+    </div>
+  );
+}
+
+
+/* ══════════════════════════════════════════════════════
+   TRAINING STATS COMPONENT
+══════════════════════════════════════════════════════ */
+function TrainingStats({trainings}){
+  const [weekOffset,setWeekOffset]=useState(0);
+
+  // Get week dates for a given offset (Mon-Sun)
+  function getWeek(offset){
+    const now=new Date();
+    const day=now.getDay();
+    const mon=new Date(now);
+    mon.setDate(now.getDate()-((day+6)%7)+offset*7);
+    const dates=[];
+    for(let i=0;i<7;i++){
+      const d=new Date(mon);
+      d.setDate(mon.getDate()+i);
+      dates.push(toLocalISO(d));
+    }
+    return dates;
+  }
+
+  // Count trainings for a week
+  function countForWeek(offset){
+    const dates=getWeek(offset);
+    const s=dates[0],e=dates[6];
+    return trainings.filter(t=>t.date>=s&&t.date<=e).length;
+  }
+
+  // Build last 8 weeks data
+  const weeks=Array.from({length:8},(_,i)=>{
+    const off=weekOffset-7+i; // older to newer
+    const dates=getWeek(off);
+    const mon=new Date(dates[0]+"T00:00:00");
+    const sun=new Date(dates[6]+"T00:00:00");
+    const label=mon.getDate()+" "+MONTH_NAMES[mon.getMonth()];
+    const count=trainings.filter(t=>t.date>=dates[0]&&t.date<=dates[6]).length;
+    const isCurrent=off===0;
+    return {off,label,count,isCurrent};
+  });
+
+  const currentWeekDates=getWeek(weekOffset);
+  const currentWeekTrainings=trainings.filter(t=>t.date>=currentWeekDates[0]&&t.date<=currentWeekDates[6]);
+  const currentCount=currentWeekTrainings.length;
+  const maxCount=Math.max(...weeks.map(w=>w.count),1);
+
+  // Group current week by day
+  const DAY_SHORT=["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
+  const byDay=currentWeekDates.map((date,i)=>{
+    const count=trainings.filter(t=>t.date===date).length;
+    const isToday=date===TODAY;
+    return {date,day:DAY_SHORT[i],count,isToday};
+  });
+
+  const weekLabel=(()=>{
+    const d0=new Date(currentWeekDates[0]+"T00:00:00");
+    const d6=new Date(currentWeekDates[6]+"T00:00:00");
+    const s=d0.getDate()+" "+MONTH_NAMES[d0.getMonth()];
+    const e=d6.getDate()+" "+MONTH_NAMES[d6.getMonth()];
+    return s+" – "+e;
+  })();
+
+  return(
+    <div style={card}>
+      {/* Header with navigation */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+        <span style={{fontWeight:600,fontSize:14}}>
+          Тренувань за тиждень
+        </span>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <button style={iconBtn} onClick={()=>setWeekOffset(w=>w-1)}>‹</button>
+          <span style={{fontSize:12,color:"var(--muted)",minWidth:140,textAlign:"center"}}>{weekOffset===0?"Цей тиждень":weekLabel}</span>
+          <button style={{...iconBtn,opacity:weekOffset>=0?".4":"1"}} onClick={()=>weekOffset<0&&setWeekOffset(w=>w+1)} disabled={weekOffset>=0}>›</button>
+          {weekOffset!==0&&<button style={{...btnG,fontSize:11,padding:"3px 8px"}} onClick={()=>setWeekOffset(0)}>Зараз</button>}
+        </div>
+      </div>
+
+      {/* Current week big number + day breakdown */}
+      <div style={{display:"flex",alignItems:"flex-end",gap:16,marginBottom:14}}>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:52,fontWeight:700,
+            color:"var(--accent)",lineHeight:1}}>{currentCount}</div>
+          <div style={{fontSize:11,color:"var(--muted)"}}>тренувань</div>
+        </div>
+
+        {/* Day-by-day mini bars */}
+        <div style={{flex:1,display:"flex",alignItems:"flex-end",gap:4,height:56}}>
+          {byDay.map(d=>{
+            const h=d.count>0?Math.max(8,Math.round(d.count/Math.max(...byDay.map(x=>x.count),1)*48)):3;
+            return(
+              <div key={d.date} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                <div style={{width:"100%",height:h,borderRadius:3,
+                  background:d.isToday?"var(--accent)":d.count>0?"var(--accent2)":"var(--border2)",
+                  minHeight:3,transition:"height .3s"}}/>
+                <div style={{fontSize:9,color:d.isToday?"var(--accent)":"var(--muted)",fontWeight:d.isToday?700:400}}>{d.day}</div>
+                {d.count>0&&<div style={{fontSize:9,color:"var(--accent2)",fontWeight:700}}>{d.count}</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 8-week chart */}
+      <div style={{borderTop:"1px solid var(--border)",paddingTop:10}}>
+        <div style={{fontSize:11,color:"var(--muted)",marginBottom:8,fontWeight:600,letterSpacing:.4,textTransform:"uppercase"}}>Останні 8 тижнів</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:3,height:60}}>
+          {weeks.map((w,i)=>{
+            const h=w.count>0?Math.max(6,Math.round(w.count/maxCount*52)):3;
+            return(
+              <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer"}}
+                onClick={()=>setWeekOffset(w.off)}>
+                <div style={{width:"100%",borderRadius:"3px 3px 0 0",
+                  background:w.isCurrent?"var(--accent)":w.count>0?"rgba(74,240,176,.5)":"var(--border)",
+                  height:h,transition:"height .3s",minHeight:3,
+                  outline:w.off===weekOffset&&!w.isCurrent?"2px solid var(--accent2)":"none"}}/>
+                <div style={{fontSize:8,color:w.isCurrent?"var(--accent)":"var(--muted)",
+                  fontWeight:w.isCurrent?700:400,whiteSpace:"nowrap"}}>{w.label}</div>
+                {w.count>0&&<div style={{fontSize:8,color:w.isCurrent?"var(--accent)":"var(--accent2)",fontWeight:600}}>{w.count}</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -379,7 +502,8 @@ function Contacts({contacts,onUpdate,onOpen,onDetail,settings,showToast}){
           {c.note&&<div style={{marginTop:8,fontSize:13,color:"var(--text2)",lineHeight:1.55,cursor:"pointer"}} onClick={()=>onDetail(c)}>{c.note.slice(0,120)}{c.note.length>120?"...":""}</div>}
           {c.remindDate&&!c.remindDone&&<div style={{display:"inline-flex",alignItems:"center",gap:4,background:"var(--surface2)",border:"1px solid var(--border)",borderRadius:6,padding:"3px 8px",fontSize:11,color:c.remindDate<=TODAY?"var(--danger)":"var(--warn)",marginTop:5}}>🔔 {c.remindDate<=TODAY?"⚠️ Написати!":"Написати: "+formatDate(c.remindDate)}</div>}
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
-            {c.contact&&<a href={"tel:"+c.contact} style={{...btnG,textDecoration:"none",fontSize:11}}>📱 {c.contact}</a>}
+            {c.chatLink&&(()=>{const pl=CHAT_PLATFORMS.find(p=>c.chatLink.startsWith(p.base));return <a href={c.chatLink} target="_blank" rel="noreferrer" style={{...btnT,textDecoration:"none",fontSize:11}}>{pl?pl.label+" →":"Чат →"}</a>;})()}
+            {!c.chatLink&&c.contact&&<a href={"tel:"+c.contact} style={{...btnG,textDecoration:"none",fontSize:11}}>📱 {c.contact}</a>}
             {c.remindDate&&!c.remindDone&&<button style={btnT} onClick={()=>markW(c.id)}>✅ Написав</button>}
             <DeleteBtn onDelete={()=>del(c.id)} label=""/>
           </div>
@@ -446,7 +570,7 @@ function ContactModal({item,contacts,settings,onClose,onSave}){
   );
 }
 
-function Reminders({contacts,onUpdate,notes,onUpdateNotes,showToast,onDetail}){
+function Reminders({contacts,onUpdate,notes,onUpdateNotes,showToast,onDetail,onOpenNoteModal}){
   const withR=contacts.filter(c=>c.remindDate&&!c.remindDone).sort((a,b)=>a.remindDate.localeCompare(b.remindDate));
   const withNR=(notes||[]).filter(n=>n.remindDate&&!n.remindDone).sort((a,b)=>a.remindDate.localeCompare(b.remindDate));
   const tagged=(arr,kind)=>arr.map(x=>({...x,_kind:kind}));
@@ -478,10 +602,47 @@ function Reminders({contacts,onUpdate,notes,onUpdateNotes,showToast,onDetail}){
     );
   };
   const Sec=({items,color,title})=>{if(!items.length)return null;return(<><div style={{color,fontWeight:700,fontSize:12,letterSpacing:1,marginBottom:8}}>{title} ({items.length})</div>{items.map(item=><ItemCard key={item.id+(item._kind||"")} item={item} color={color}/>)}<div style={{height:1,background:"var(--border)",margin:"14px 0"}}/></>);};
-  if(!total)return(<div><div style={secTitle}>НАГАДУВАННЯ</div><Empty icon="🎉" text="Нагадувань немає!" sub="Ти всім написав."/></div>);
+  const [quickText,setQuickText]=useState("");
+  const [quickDate,setQuickDate]=useState(TODAY);
+  const addQuickReminder=()=>{
+    if(!quickText.trim())return;
+    const newNote={
+      id:uid(),type:"todo",title:quickText.trim(),body:"",
+      remindDate:quickDate,remindDone:false,
+      contactIds:[],extraNames:[],pinned:false,done:false,createdAt:Date.now()
+    };
+    onUpdateNotes([...(notes||[]),newNote]);
+    setQuickText("");
+    setQuickDate(TODAY);
+    showToast("Нагадування додано ✓");
+  };
+
   return(
     <div>
       <div style={secTitle}>НАГАДУВАННЯ <span style={{color:"var(--muted)",fontSize:16}}>({total})</span></div>
+
+      {/* Quick add reminder */}
+      <div style={{...card,borderColor:"rgba(200,241,53,.2)",marginBottom:14}}>
+        <div style={{fontSize:11,fontWeight:700,color:"var(--accent)",textTransform:"uppercase",letterSpacing:.6,marginBottom:8}}>+ Нове нагадування</div>
+        <input style={{...inp,marginBottom:8}} placeholder="Що потрібно зробити або написати..." value={quickText} onChange={e=>setQuickText(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&addQuickReminder()}/>
+        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+          <input type="date" style={{...inp,flex:1,minWidth:140}} value={quickDate} onChange={e=>setQuickDate(e.target.value)}/>
+          <div style={{display:"flex",gap:5}}>
+            {[{l:"Сьогодні",d:0},{l:"Завтра",d:1},{l:"+7 днів",d:7}].map(({l,d})=>{
+              const dt=new Date();dt.setDate(dt.getDate()+d);
+              const v=toLocalISO(dt);
+              return <button key={l} style={{...btnG,fontSize:11,padding:"5px 8px",
+                borderColor:quickDate===v?"var(--accent)":"var(--border2)",
+                color:quickDate===v?"var(--accent)":"var(--muted)"}}
+                onClick={()=>setQuickDate(v)}>{l}</button>;
+            })}
+          </div>
+          <button style={{...btnP,padding:"7px 16px",flexShrink:0}} onClick={addQuickReminder}>Додати</button>
+        </div>
+      </div>
+
+      {!total&&<Empty icon="🎉" text="Нагадувань немає!" sub="Ти всім написав."/>}
       <Sec items={allOverdue} color="#ff4f6a" title="⚠️ ПРОСТРОЧЕНО"/>
       <Sec items={allToday} color="#ffb830" title="🔥 СЬОГОДНІ"/>
       <Sec items={allUpcoming} color="#4af0b0" title="📅 ЗАПЛАНОВАНО"/>
@@ -629,7 +790,13 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
   const [courtModal,setCourtModal]=useState(null);
   const [trainModal,setTrainModal]=useState(null);
   const dates=getWeekDates(weekOffset);
-  const CELL_H=60,TIME_W=48,COURT_W=80,TRAIN_W=130;
+  const CELL_H=60,TIME_W=48;
+  // Dynamic column widths based on available screen width
+  const screenW=typeof window!=="undefined"?window.innerWidth:1400;
+  const availW=screenW-TIME_W;
+  const dayW=Math.max(170,Math.floor(availW/7));
+  const COURT_W=Math.floor(dayW*0.38);
+  const TRAIN_W=dayW-COURT_W;
   const fmt=(d)=>{const dt=new Date(d+"T00:00:00");return DAY_NAMES_SHORT[(dt.getDay()+6)%7]+" "+dt.getDate()+" "+MONTH_NAMES[dt.getMonth()];};
   const rangeLabel=fmt(dates[0])+" – "+fmt(dates[6]);
   const totalH=HOURS.length*CELL_H;
@@ -674,11 +841,11 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
               {HOURS.map(h=>(<div key={h} style={{height:CELL_H,display:"flex",alignItems:"flex-start",justifyContent:"flex-end",padding:"4px 6px 0",borderBottom:"1px solid var(--cal-line)"}}><span style={{fontSize:11,color:"var(--muted)",fontWeight:600,whiteSpace:"nowrap"}}>{String(h).padStart(2,"0")}:00</span></div>))}
             </div>
             {dates.map(date=>(
-              <React.Fragment key={date}>
+              <div key={date} style={{display:"contents"}}>
                 <div style={{borderLeft:"1px solid var(--border)",borderRight:"1px solid var(--border)",position:"relative",height:totalH,background:"rgba(255,255,255,.005)"}}>
                   {HOURS.map((h,i)=>(<div key={h} style={{position:"absolute",top:i*CELL_H,left:0,right:0,height:CELL_H,borderBottom:"1px solid var(--cal-line)",pointerEvents:"none"}}/>))}
                   {HOURS.map((h,i)=>courtCovers(date,h)?null:(<button key={h} onClick={()=>setCourtModal({date,hour:h,isNew:true})} style={{position:"absolute",top:i*CELL_H,left:0,width:"100%",height:CELL_H,background:"transparent",border:"none",color:"var(--border2)",fontSize:16,cursor:"pointer",opacity:.5,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>))}
-                  {courts.filter(c=>c.date===date).map(c=>{const ct=getCourt(c.court);const dur=c.duration||1;const color=ct?ct.color:"var(--accent2)";return(<div key={c.id} onClick={()=>setCourtModal({...c,isNew:false})} style={{position:"absolute",top:topPx(c.hour)+2,left:2,right:2,height:dur*CELL_H-4,background:`${color||"#4af0b0"}20`,border:`1px solid ${color||"#4af0b0"}50`,borderLeft:`3px solid ${color||"#4af0b0"}`,borderRadius:5,padding:"3px 5px",cursor:"pointer",overflow:"hidden",zIndex:2,boxSizing:"border-box"}}><div style={{fontSize:10,fontWeight:700,color:color||"#4af0b0",lineHeight:1.2}}>{ct?ct.label:"Корт"}</div>{c.courtNum&&<div style={{fontSize:9,opacity:.8,color:color||"#4af0b0"}}>№{c.courtNum}</div>}{dur>1&&<div style={{fontSize:9,color:"var(--muted)",marginTop:1}}>{dur} год</div>}</div>);})}
+                  {courts.filter(c=>c.date===date).map(c=>{const ct=(settings?.courtTypes||COURTS).find(x=>x.id===c.court);const dur=c.duration||1;const color=ct?ct.color:"var(--accent2)";return(<div key={c.id} onClick={()=>setCourtModal({...c,isNew:false})} style={{position:"absolute",top:topPx(c.hour)+2,left:2,right:2,height:dur*CELL_H-4,background:`${color||"#4af0b0"}20`,border:`1px solid ${color||"#4af0b0"}50`,borderLeft:`3px solid ${color||"#4af0b0"}`,borderRadius:5,padding:"3px 5px",cursor:"pointer",overflow:"hidden",zIndex:2,boxSizing:"border-box"}}><div style={{fontSize:10,fontWeight:700,color:color||"#4af0b0",lineHeight:1.2}}>{ct?ct.label:"Корт"}</div>{c.courtNum&&<div style={{fontSize:9,opacity:.8,color:color||"#4af0b0"}}>№{c.courtNum}</div>}{dur>1&&<div style={{fontSize:9,color:"var(--muted)",marginTop:1}}>{dur} год</div>}</div>);})}
                 </div>
                 <div style={{position:"relative",height:totalH}}>
                   {HOURS.map((h,i)=>(<div key={h} style={{position:"absolute",top:i*CELL_H,left:0,right:0,height:CELL_H,borderBottom:"1px solid var(--cal-line)",pointerEvents:"none"}}/>))}
@@ -728,7 +895,7 @@ function CalendarView({courts,trainings,onUpdateCourts,onUpdateTrainings,contact
   );
 })}}
                 </div>
-              </React.Fragment>
+              </div>
             ))}
           </div>
         </div>
@@ -868,190 +1035,6 @@ function GroupModal({item,groups,contacts,onClose,onSave}){
 }
 
 // ── POSTS ─────────────────────────────────────────────────────────────────────
-function Posts({posts,onUpdate,onOpen,showToast}){
-  const [filter,setFilter]=useState("all");
-  const filtered=filter==="all"?posts:posts.filter(p=>p.channels?.includes(filter));
-  const del=(id)=>{if(!confirm("Видалити пост?"))return;onUpdate(posts.filter(p=>p.id!==id));showToast("Видалено");};
-  return(
-    <div>
-      <div style={secTitle}>ПОСТИ ТА РЕКЛАМА</div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-        <button style={filter==="all"?fOn:fOff} onClick={()=>setFilter("all")}>Всі ({posts.length})</button>
-        {CHANNELS.map(ch=>{const cnt=posts.filter(p=>p.channels?.includes(ch.id)).length;if(!cnt)return null;return <button key={ch.id} style={filter===ch.id?fOn:fOff} onClick={()=>setFilter(ch.id)}>{ch.emoji} {ch.label} ({cnt})</button>;})}
-      </div>
-      {!filtered.length&&<Empty icon="📣" text="Постів немає" sub="Натисни + щоб додати"/>}
-      {filtered.map(p=>(
-        <div key={p.id} style={card}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-            <div><div style={{fontWeight:600,fontSize:14}}>{p.title}</div><div style={{color:"#6b7394",fontSize:11,marginTop:2}}>{formatDate(p.date)} {p.type&&<span style={{color:"#b07fff"}}>· {p.type}</span>}</div></div>
-            <div style={{display:"flex",gap:6}}><button style={iconBtn} onClick={()=>onOpen(p)}>✏️</button><button style={iconBtn} onClick={()=>del(p.id)}>🗑</button></div>
-          </div>
-          {p.channels?.length>0&&<div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:6}}>{p.channels.map(ch=><ChannelChip key={ch} channel={ch}/>)}</div>}
-          {p.text&&<div style={{marginTop:8,color:"#9097b5",fontSize:13,lineHeight:1.55}}>{p.text.slice(0,200)}{p.text.length>200?"...":""}</div>}
-          {p.result&&<div style={{marginTop:6,padding:"6px 10px",background:"rgba(74,240,176,.08)",borderRadius:6,color:"#4af0b0",fontSize:12}}>📊 {p.result}</div>}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── POST MODAL ────────────────────────────────────────────────────────────────
-function PostModal({item,posts,onClose,onSave}){
-  const [form,setForm]=useState(item||{id:uid(),title:"",channels:[],type:"Пост",date:TODAY,text:"",result:""});
-  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
-  const tgCh=(id)=>set("channels",(form.channels||[]).includes(id)?(form.channels||[]).filter(c=>c!==id):[...(form.channels||[]),id]);
-  const save=()=>{if(!form.title.trim()){alert("Введи назву!");return;}onSave(item?posts.map(p=>p.id===item.id?form:p):[form,...posts]);};
-  return(
-    <div style={overlay} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={modal}>
-        <div style={modalTitle}><span>{item?"Редагувати пост":"Новий пост"}</span><button style={{background:"none",border:"none",color:"#6b7394",fontSize:20,cursor:"pointer"}} onClick={onClose}>✕</button></div>
-        <Row label="Назва / Тема *"><input style={inp} placeholder="Набір у групу..." value={form.title} onChange={e=>set("title",e.target.value)}/></Row>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <Row label="Тип"><select style={inp} value={form.type} onChange={e=>set("type",e.target.value)}>{["Пост","Сторіс","Реклама","Оголошення","Відео"].map(t=><option key={t}>{t}</option>)}</select></Row>
-          <Row label="Дата"><input style={inp} type="date" value={form.date} onChange={e=>set("date",e.target.value)}/></Row>
-        </div>
-        <Row label="Платформи">
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            {CHANNELS.filter(c=>c.id!=="personal").map(ch=>{const s=(form.channels||[]).includes(ch.id);return <button key={ch.id} onClick={()=>tgCh(ch.id)} style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${s?ch.color:"#2a3248"}`,background:s?"rgba(255,255,255,.05)":"#1a2035",color:s?ch.color:"#9097b5",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,cursor:"pointer"}}>{ch.emoji} {ch.label}</button>;})}
-          </div>
-        </Row>
-        <Row label="Текст посту"><textarea style={{...inp,minHeight:72,resize:"vertical"}} placeholder="Текст..." value={form.text} onChange={e=>set("text",e.target.value)}/></Row>
-        <Row label="Результат / реакції"><input style={inp} placeholder="12 лайків, 3 запити..." value={form.result} onChange={e=>set("result",e.target.value)}/></Row>
-        <div style={{display:"flex",gap:8}}><button style={{...btnP,flex:1}} onClick={save}>Зберегти</button><button style={btnG} onClick={onClose}>Скасувати</button></div>
-      </div>
-    </div>
-  );
-}
-
-
-
-/* ══════════════════════════════════════════════════════
-   SETTINGS MODAL
-══════════════════════════════════════════════════════ */
-function SettingsModal({settings,onClose,onSave}){
-  const [form,setForm]=useState(JSON.parse(JSON.stringify(settings)));
-  const setF=(k,v)=>setForm(f=>({...f,[k]:v}));
-
-  // ── Train Types ──
-  const addTrainType=()=>setF("trainTypes",[...form.trainTypes,{id:uid(),label:"Новий тип",color:"#9097b5"}]);
-  const delTrainType=(id)=>setF("trainTypes",form.trainTypes.filter(t=>t.id!==id));
-  const updTrainType=(id,k,v)=>setF("trainTypes",form.trainTypes.map(t=>t.id===id?{...t,[k]:v}:t));
-
-  // ── Court Types ──
-  const addCourtType=()=>setF("courtTypes",[...form.courtTypes,{id:uid(),label:"Новий корт",color:"#9097b5"}]);
-  const delCourtType=(id)=>setF("courtTypes",form.courtTypes.filter(c=>c.id!==id));
-  const updCourtType=(id,k,v)=>setF("courtTypes",form.courtTypes.map(c=>c.id===id?{...c,[k]:v}:c));
-
-  // ── Statuses ──
-  const addStatus=()=>setF("statuses",[...form.statuses,{id:uid(),label:"Новий статус",color:"#9097b5"}]);
-  const delStatus=(id)=>setF("statuses",form.statuses.filter(s=>s.id!==id));
-  const updStatus=(id,k,v)=>setF("statuses",form.statuses.map(s=>s.id===id?{...s,[k]:v}:s));
-
-  // ── Levels ──
-  const [newLevel,setNewLevel]=useState("");
-  const addLevel=()=>{if(!newLevel.trim())return;setF("levels",[...form.levels,newLevel.trim()]);setNewLevel("");};
-  const delLevel=(l)=>setF("levels",form.levels.filter(x=>x!==l));
-  const updLevel=(i,v)=>{const a=[...form.levels];a[i]=v;setF("levels",a);};
-
-  // ── Channels ──
-  const addChannel=()=>setF("channels",[...form.channels,{id:uid(),label:"Новий канал",color:"#9097b5"}]);
-  const delChannel=(id)=>setF("channels",form.channels.filter(c=>c.id!==id));
-  const updChannel=(id,k,v)=>setF("channels",form.channels.map(c=>c.id===id?{...c,[k]:v}:c));
-
-  const SectionTitle=({children})=>(
-    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:16,fontWeight:700,
-      letterSpacing:1.5,color:"var(--accent)",margin:"18px 0 10px",
-      borderBottom:"1px solid var(--border)",paddingBottom:6}}>
-      {children}
-    </div>
-  );
-
-  const ColorRow=({item,onLabel,onColor,onDel})=>(
-    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-      <input type="color" value={item.color} onChange={e=>onColor(e.target.value)}
-        style={{width:32,height:32,borderRadius:6,border:"1px solid var(--border2)",
-          cursor:"pointer",padding:2,background:"var(--surface2)",flexShrink:0}}/>
-      <div style={{width:8,height:8,borderRadius:"50%",background:item.color,flexShrink:0}}/>
-      <input style={{...inp,flex:1}} value={item.label} onChange={e=>onLabel(e.target.value)}
-        placeholder="Назва..."/>
-      <DeleteBtn onDelete={onDel} label="" style={{padding:"5px 8px",flexShrink:0}}/>
-    </div>
-  );
-
-  return(
-    <div style={{...overlay,alignItems:"flex-start",overflowY:"auto"}} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{...modal,borderRadius:16,margin:"20px auto",maxHeight:"calc(100vh - 40px)"}}>
-        <div style={modalTitle}>
-          <span>&#9881; Налаштування</span>
-          <button style={{background:"none",border:"none",color:"var(--muted)",fontSize:20,cursor:"pointer"}} onClick={onClose}>✕</button>
-        </div>
-
-        {/* Train Types */}
-        <SectionTitle>Типи тренувань</SectionTitle>
-        {form.trainTypes.map(t=>(
-          <ColorRow key={t.id} item={t}
-            onLabel={v=>updTrainType(t.id,"label",v)}
-            onColor={v=>updTrainType(t.id,"color",v)}
-            onDel={()=>delTrainType(t.id)}/>
-        ))}
-        <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addTrainType}>+ Додати тип тренування</button>
-
-        {/* Court Types */}
-        <SectionTitle>Типи кортів</SectionTitle>
-        {form.courtTypes.map(c=>(
-          <ColorRow key={c.id} item={c}
-            onLabel={v=>updCourtType(c.id,"label",v)}
-            onColor={v=>updCourtType(c.id,"color",v)}
-            onDel={()=>delCourtType(c.id)}/>
-        ))}
-        <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addCourtType}>+ Додати тип корту</button>
-
-        {/* Statuses */}
-        <SectionTitle>Статуси контактів</SectionTitle>
-        {form.statuses.map(s=>(
-          <ColorRow key={s.id} item={s}
-            onLabel={v=>updStatus(s.id,"label",v)}
-            onColor={v=>updStatus(s.id,"color",v)}
-            onDel={()=>delStatus(s.id)}/>
-        ))}
-        <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addStatus}>+ Додати статус</button>
-
-        {/* Levels */}
-        <SectionTitle>Рівні гравців</SectionTitle>
-        {form.levels.map((l,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-            <input style={{...inp,flex:1}} value={l} onChange={e=>updLevel(i,e.target.value)}/>
-            <DeleteBtn onDelete={()=>delLevel(l)} label="" style={{padding:"5px 8px",flexShrink:0}}/>
-          </div>
-        ))}
-        <div style={{display:"flex",gap:6,marginBottom:4}}>
-          <input style={{...inp,flex:1}} placeholder="Новий рівень..." value={newLevel} onChange={e=>setNewLevel(e.target.value)}
-            onKeyDown={e=>e.key==="Enter"&&addLevel()}/>
-          <button style={{...btnG,fontSize:12,flexShrink:0}} onClick={addLevel}>+ Додати</button>
-        </div>
-
-        {/* Channels */}
-        <SectionTitle>Канали спілкування</SectionTitle>
-        {form.channels.map(c=>(
-          <ColorRow key={c.id} item={c}
-            onLabel={v=>updChannel(c.id,"label",v)}
-            onColor={v=>updChannel(c.id,"color",v)}
-            onDel={()=>delChannel(c.id)}/>
-        ))}
-        <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={addChannel}>+ Додати канал</button>
-
-        <div style={{height:1,background:"var(--border)",margin:"16px 0"}}/>
-
-        <div style={{display:"flex",gap:8}}>
-          <button style={{...btnP,flex:1}} onClick={()=>onSave(form)}>Зберегти налаштування</button>
-          <button style={btnG} onClick={onClose}>Скасувати</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>

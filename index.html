@@ -200,6 +200,8 @@ function App(){
       {id:"inactive",label:"Неактивний",color:"#ff4f6a"},
     ],
     levels:["Початківець","Нижче середнього","Середній","Вище середнього","Просунутий"],
+    calendarCols:[{id:"train",label:"Тренування",enabled:true,type:"training"},{id:"loc",label:"Локація",enabled:false,type:"court"}],
+    contactTabTemplates:[{id:"main",label:"Основна",type:"main",removable:false},{id:"params",label:"Параметри",type:"params",removable:true},{id:"history",label:"Історія",type:"history",removable:false}],
     dashBlocks:[{id:"today_trainings",label:"Тренування сьогодні",enabled:true,order:0},{id:"reminders",label:"Нагадування",enabled:true,order:1},{id:"quick_note",label:"Швидка замітка",enabled:true,order:2},{id:"week_stats",label:"Статистика тижня",enabled:false,order:3},{id:"client_activity",label:"Активність клієнтів",enabled:false,order:4},{id:"groups_block",label:"Групи",enabled:false,order:5}],
     channels:[
       {id:"facebook",label:"Facebook",color:"#1877F2"},
@@ -226,7 +228,23 @@ function App(){
 
   useEffect(()=>{document.body.className=dark?"":"light";lsSet("padel_theme",dark?"dark":"light");},[dark]);
   useEffect(()=>{if(window._fbReady){setFbReady(true);return;}const h=()=>setFbReady(true);window.addEventListener("fbReady",h);return()=>window.removeEventListener("fbReady",h);},[]);
-  useEffect(()=>{if(!fbReady)return;const unsub=window._fb.onAuth(u=>{setUser(u);setAuthLoading(false);});return unsub;},[fbReady]);
+  useEffect(()=>{
+    if(!fbReady)return;
+    const unsub=window._fb.onAuth(u=>{
+      const prevUid=localStorage.getItem("padel_uid");
+      // Different user or logout - clear everything
+      if(!u||(u&&prevUid&&prevUid!==u.uid)){
+        ["padel_contacts","padel_groups","padel_courts","padel_trainings","padel_notes","padel_settings","padel_uid"].forEach(k=>localStorage.removeItem(k));
+        setContacts([]);setGroups([]);setCourts([]);setTrainings([]);setNotes([]);
+        setSettings(s=>({...s,trainTypes:s.trainTypes})); // keep settings structure but clear data
+      }
+      if(u){
+        localStorage.setItem("padel_uid",u.uid);
+      }
+      setUser(u);setAuthLoading(false);
+    });
+    return unsub;
+  },[fbReady]);
 
   useEffect(()=>{
     if(!user)return;
@@ -292,7 +310,7 @@ function App(){
           </button>}
           {showSignOut&&<div style={{position:"absolute",top:48,right:12,background:"var(--surface)",border:"1px solid var(--border2)",borderRadius:10,padding:8,zIndex:200,minWidth:160,boxShadow:"0 4px 20px rgba(0,0,0,.3)"}}>
             <div style={{fontSize:12,color:"var(--muted)",padding:"4px 8px 8px",borderBottom:"1px solid var(--border)",marginBottom:6}}>{user?.email}</div>
-            <button onClick={()=>{window._fb.signOut();setShowSignOut(false);}} style={{width:"100%",padding:"7px 8px",borderRadius:6,border:"none",background:"rgba(255,79,106,.1)",color:"var(--danger)",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,cursor:"pointer",textAlign:"left"}}>Вийти з акаунту</button>
+            <button onClick={()=>{["padel_contacts","padel_groups","padel_courts","padel_trainings","padel_notes","padel_settings","padel_uid"].forEach(k=>localStorage.removeItem(k));window._fb.signOut();setShowSignOut(false);}} style={{width:"100%",padding:"7px 8px",borderRadius:6,border:"none",background:"rgba(255,79,106,.1)",color:"var(--danger)",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,cursor:"pointer",textAlign:"left"}}>Вийти з акаунту</button>
           </div>}
         </div>
       </header>
@@ -676,11 +694,14 @@ function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast,settings})
   const c=contacts.find(x=>x.id===id);
   if(!c)return null;
 
-  const templateTabs=settings?.contactTabTemplates||[
+  const DEFAULT_CONTACT_TABS=[
     {id:"main",label:"Основна",type:"main",removable:false},
     {id:"params",label:"Параметри",type:"params",removable:true},
     {id:"history",label:"Історія",type:"history",removable:false},
   ];
+  const templateTabs=(settings?.contactTabTemplates&&settings.contactTabTemplates.length>0)
+    ?settings.contactTabTemplates
+    :DEFAULT_CONTACT_TABS;
   const contactTabs=c.customTabs||[];
   const allTabs=[...templateTabs,...contactTabs];
 
@@ -1680,7 +1701,14 @@ function SettingsModal({settings,onClose,onSave}){
     {id:"client_activity",label:"Активність клієнтів",enabled:false,order:4},
     {id:"groups_block",label:"Групи",enabled:false,order:5},
   ];
-  const merged={...settings,dashBlocks:settings.dashBlocks&&settings.dashBlocks.length>0?settings.dashBlocks:DEFAULT_DASH};
+  const DEFAULT_TABS=[{id:"main",label:"Основна",type:"main",removable:false},{id:"params",label:"Параметри",type:"params",removable:true},{id:"history",label:"Історія",type:"history",removable:false}];
+  const DEFAULT_CAL_COLS=[{id:"train",label:"Тренування",enabled:true,type:"training"},{id:"loc",label:"Локація",enabled:false,type:"court"}];
+  const merged={
+    ...settings,
+    dashBlocks:settings.dashBlocks&&settings.dashBlocks.length>0?settings.dashBlocks:DEFAULT_DASH,
+    contactTabTemplates:settings.contactTabTemplates&&settings.contactTabTemplates.length>0?settings.contactTabTemplates:DEFAULT_TABS,
+    calendarCols:settings.calendarCols&&settings.calendarCols.length>0?settings.calendarCols:DEFAULT_CAL_COLS,
+  };
   const [form,setForm]=useState(JSON.parse(JSON.stringify(merged)));
   const setF=(k,v)=>setForm(f=>({...f,[k]:v}));
   const addTrainType=()=>setF("trainTypes",[...form.trainTypes,{id:uid(),label:"Новий тип",color:"#9097b5"}]);
@@ -1771,6 +1799,29 @@ function SettingsModal({settings,onClose,onSave}){
           </div>
         ))}
         <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={()=>setF("calendarCols",[...(form.calendarCols||[]),{id:uid(),label:"Нова колонка",enabled:true,type:"training"}])}>+ Додати колонку</button>
+
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:16,fontWeight:700,letterSpacing:1.5,color:"var(--accent)",margin:"18px 0 10px",borderBottom:"1px solid var(--border)",paddingBottom:6}}>Шаблон вкладок клієнта</div>
+        <div style={{fontSize:11,color:"var(--muted)",marginBottom:8}}>Ці вкладки будуть у кожного нового клієнта за замовчуванням</div>
+        {(form.contactTabTemplates||[]).map((tab,i,arr)=>(
+          <div key={tab.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+            <select style={{...inp,width:110,flexShrink:0}} value={tab.type}
+              onChange={e=>{const a=[...(form.contactTabTemplates||[])];a[i]={...a[i],type:e.target.value};setF("contactTabTemplates",a);}}>
+              <option value="main">Основна</option>
+              <option value="params">Параметри</option>
+              <option value="history">Історія</option>
+              <option value="fields">Поля</option>
+              <option value="records">Записи</option>
+              <option value="checklist">Список</option>
+              <option value="text">Текст</option>
+            </select>
+            <input style={{...inp,flex:1}} value={tab.label}
+              onChange={e=>{const a=[...(form.contactTabTemplates||[])];a[i]={...a[i],label:e.target.value};setF("contactTabTemplates",a);}}/>
+            {tab.removable
+              ?<DeleteBtn onDelete={()=>setF("contactTabTemplates",(form.contactTabTemplates||[]).filter((_,j)=>j!==i))} label="" style={{padding:"5px 8px"}}/>
+              :<span style={{fontSize:11,color:"var(--muted)",padding:"0 6px",flexShrink:0}}>фікс</span>}
+          </div>
+        ))}
+        <button style={{...btnG,fontSize:12,marginBottom:4}} onClick={()=>setF("contactTabTemplates",[...(form.contactTabTemplates||[]),{id:uid(),label:"Нова вкладка",type:"fields",removable:true}])}>+ Додати вкладку</button>
 
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:16,fontWeight:700,letterSpacing:1.5,color:"var(--accent)",margin:"18px 0 10px",borderBottom:"1px solid var(--border)",paddingBottom:6}}>Блоки екрану "Сьогодні"</div>
         {(form.dashBlocks||[]).sort((a,b)=>a.order-b.order).map((block,i,arr)=>(

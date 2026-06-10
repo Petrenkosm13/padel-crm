@@ -993,7 +993,19 @@ function NameInput({value,onChange,names,placeholder,style:extraStyle}){
 }
 
 function TrainingModal({item,contacts,trainings,settings,onClose,onSave,onDelete}){
-  const isGroup=(t)=>t==="padel_grp"||t==="padel_aly";
+  const isGroup=(t)=>{
+    if(!t)return false;
+    // Check by known ids (backwards compat)
+    if(t==="padel_grp"||t==="padel_aly"||t==="group_train")return true;
+    // Check by label in settings
+    const trainTypes=settings?.trainTypes||TRAIN_TYPES;
+    const found=trainTypes.find(x=>x.id===t);
+    if(found&&found.label){
+      const lbl=found.label.toLowerCase();
+      return lbl.includes("груп")||lbl.includes("group")||lbl.includes("групов");
+    }
+    return false;
+  };
   const initPlayers=item.players&&item.players.length?[...item.players]:["","","",""];
   const [form,setForm]=useState({id:item.id||uid(),date:item.date||TODAY,hour:item.hour||9,type:item.type||"",duration:item.duration||1,player:item.player||"",paid:item.paid||false,players:initPlayers,paidPlayers:item.paidPlayers||Array(initPlayers.length).fill(false),note:item.note||"",isNew:item.isNew!==false});
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));

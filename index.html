@@ -721,6 +721,9 @@ function Reminders({contacts,onUpdate,notes,onUpdateNotes,showToast,onDetail,onO
       <Sec items={allToday} color="#ffb830" title="🔥 СЬОГОДНІ"/>
       <Sec items={allUpcoming} color="#4af0b0" title="📅 ЗАПЛАНОВАНО"/>
     </div>
+  );
+}
+
 function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast,settings}){
   const [activeTab,setActiveTab]=useState("main");
   const [addingTab,setAddingTab]=useState(false);

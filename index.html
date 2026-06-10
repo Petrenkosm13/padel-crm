@@ -840,44 +840,6 @@ function ContactDetail({id,contacts,onClose,onEdit,onUpdate,showToast,settings})
   );
 }
 
-
-              <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setEditNote(n)}>
-                <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                  {n.pinned&&<span style={{fontSize:10,color:"var(--accent)"}}>📌</span>}
-                  <span style={{fontWeight:600,fontSize:15,color:n.done?"var(--muted)":"var(--text)",textDecoration:n.done?"line-through":"none"}}>{n.title||"Без назви"}</span>
-                  <span style={{padding:"1px 7px",borderRadius:12,fontSize:10,fontWeight:700,background:`${nt.color}18`,color:nt.color}}>{nt.label}</span>
-                </div>
-                {n.body&&<div style={{fontSize:13,color:"var(--text2)",marginTop:4,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{n.body}</div>}
-              </div>
-              <div style={{display:"flex",gap:4,flexShrink:0}}>
-                <button onClick={()=>togglePin(n.id)} style={{...iconBtn,color:n.pinned?"var(--accent)":"var(--muted)"}}>📌</button>
-                <button onClick={()=>setEditNote(n)} style={iconBtn}>✏️</button>
-              </div>
-            </div>
-            {n.remindDate&&!n.remindDone&&(
-              <div style={{display:"inline-flex",alignItems:"center",gap:6,marginTop:8,padding:"4px 10px",borderRadius:8,background:overdue?"rgba(255,79,106,.1)":dueToday?"rgba(255,184,48,.1)":"rgba(74,240,176,.08)",border:`1px solid ${overdue?"rgba(255,79,106,.3)":dueToday?"rgba(255,184,48,.3)":"rgba(74,240,176,.2)"}`}}>
-                <span style={{fontSize:11,color:overdue?"var(--danger)":dueToday?"var(--warn)":"var(--accent2)",fontWeight:600}}>🔔 {overdue?"⚠️ Прострочено":dueToday?"Сьогодні":formatDate(n.remindDate)}</span>
-                <button onClick={()=>markRemindDone(n.id)} style={{background:"none",border:"none",color:"var(--accent2)",cursor:"pointer",fontSize:11,fontWeight:700,padding:0}}>✓ Знято</button>
-              </div>
-            )}
-            {(linkedContacts.length>0||(n.extraNames||[]).filter(Boolean).length>0)&&(
-              <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:8}}>
-                {linkedContacts.map(c=>(<span key={c.id} style={{padding:"2px 8px",borderRadius:12,fontSize:11,fontWeight:600,background:"var(--surface2)",border:"1px solid var(--border2)",color:"var(--text2)"}}>👤 {c.name}</span>))}
-                {(n.extraNames||[]).filter(Boolean).map((name,i)=>(<span key={"ex"+i} style={{padding:"2px 8px",borderRadius:12,fontSize:11,fontWeight:600,background:"rgba(74,158,244,.1)",border:"1px solid rgba(74,158,244,.3)",color:"#4a9ef4"}}>👤 {name}</span>))}
-              </div>
-            )}
-            <div style={{display:"flex",gap:6,marginTop:10,flexWrap:"wrap"}}>
-              <button onClick={()=>toggleDone(n.id)} style={{...btnT,fontSize:11,padding:"4px 10px",background:n.done?"rgba(107,115,148,.15)":"rgba(74,240,176,.12)",color:n.done?"var(--muted)":"var(--accent2)"}}>{n.done?"↩ Відновити":"✓ Виконано"}</button>
-              <DeleteBtn onDelete={()=>del(n.id)} label=""/>
-            </div>
-          </div>
-        );
-      })}
-      {editNote&&<NoteModal item={editNote} contacts={contacts} notes={notes} onClose={()=>setEditNote(null)} onSave={v=>{onUpdate(v);setEditNote(null);showToast("Збережено ✓");}}/>}
-    </div>
-  );
-}
-
 function Notes({notes,contacts,onUpdate,showToast}){
   const [filter,setFilter]=useState("all");
   const [search,setSearch]=useState("");

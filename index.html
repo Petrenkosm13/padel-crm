@@ -380,7 +380,7 @@ function Dashboard({contacts,groups,trainings,notes,onTabChange,settings,onUpdat
       </div>
       {todayT.length===0&&<div style={{color:"var(--muted)",fontSize:13}}>Тренувань немає</div>}
       {todayT.map(t=>{
-        const tt=trainTypes.find(x=>x.id===t.type)||{label:t.type||"?",color:"var(--muted)"};
+        const ttFound=trainTypes.find(x=>x.id===t.type);const tt=ttFound||{label:t.type||"?",color:"var(--muted)"};
         const names=[t.player,...(t.players||[])].filter(Boolean);
         return(
           <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:"1px solid var(--border)"}}>
@@ -1541,7 +1541,18 @@ function Analytics({trainings,contacts,settings}){
   const trainTypes=settings?.trainTypes||TRAIN_TYPES;
 
   function byType(arr){
-    return trainTypes.map(tt=>({...tt,count:arr.filter(t=>t.type===tt.id).length})).filter(x=>x.count>0);
+    // Collect all unique type ids from actual trainings
+    const uniqueTypes=[...new Set(arr.map(t=>t.type).filter(Boolean))];
+    return uniqueTypes.map(typeId=>{
+      // Find label in settings
+      const found=trainTypes.find(tt=>tt.id===typeId);
+      return {
+        id:typeId,
+        label:found?found.label:typeId,
+        color:found?found.color:"#9097b5",
+        count:arr.filter(t=>t.type===typeId).length,
+      };
+    }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
   }
   const wByType=byType(weekT);
   const mByType=byType(monthT);
